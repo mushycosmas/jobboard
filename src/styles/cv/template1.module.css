@@ -1,0 +1,128 @@
+/* Scoped Styles for the CV Template */
+.cvContainer {
+  display: flex;
+  max-width: 1200px;
+  padding: 30px;
+  background-color: #fff;
+  border-radius: 10px;
+  box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.1);
+  font-size: 1rem; /* Set a base font size for the whole profile */
+  line-height: 1.6; /* Adjust line-height for better readability */
+}
+
+.sidebar {
+  width: 30%;
+  background-color: #007bff;
+  color: white;
+  padding: 20px;
+  border-radius: 10px;
+  margin-right: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.profileImg {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 20px;
+  border: 3px solid #fff;
+}
+
+.profileName {
+  font-size: 1.8rem; /* Larger font size for name */
+  margin: 10px 0;
+}
+
+.profileTitle {
+  font-size: 1.2rem; /* Consistent with other title font sizes */
+  margin-bottom: 20px;
+}
+
+.profileContact p,
+.links p {
+  font-size: 1rem; /* Ensure consistent font size for contact and links */
+  margin-bottom: 5px;
+  word-wrap: break-word; /* Allow wrapping of the URLs in the p tags */
+}
+
+.links {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.links a {
+  color: white; /* White color for links */
+  text-decoration: none; /* Remove underline */
+  word-wrap: break-word; /* Allow long words to break and wrap */
+  word-break: break-all; /* Break long words in the middle if needed */
+  white-space: normal; /* Ensure the text wraps and does not stay in one line */
+  font-size: 1rem; /* Same font size for links */
+}
+
+.links a:hover {
+  text-decoration: underline; /* Underline on hover */
+}
+
+.mainContent {
+  width: 70%;
+}
+
+.section {
+  margin-bottom: 30px;
+}
+
+.sectionTitle {
+  font-size: 1.5rem; /* Same size for all section titles */
+  color: #007bff;
+  font-weight: bold;
+  margin-bottom: 10px;
+  border-bottom: 2px solid #007bff;
+  padding-bottom: 5px;
+}
+
+.skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.skill {
+  background-color: #007bff;
+  color: white;
+  padding: 8px 18px;
+  border-radius: 30px;
+  font-size: 14px;
+  margin: 5px;
+}
+
+ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+h4, h3 {
+  font-size: 1.2rem; /* Ensuring h4 and h3 have a similar font size */
+}
+
+p {
+  font-size: 1rem; /* Consistent text size for paragraphs */
+}
+
+
+
+.responsibilitiesWrapper {
+  width: 100%;
+  word-wrap: break-word; /* Ensure long words break and wrap */
+  margin-top: 10px;
+}
+
+.responsibilityText {
+  font-size: 1rem; /* Adjust font size */
+  line-height: 1.5; /* Adjust line-height for readability */
+  margin-bottom: 10px; /* Space between each line of responsibility */
+}

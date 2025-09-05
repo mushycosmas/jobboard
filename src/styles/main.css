@@ -1,0 +1,41 @@
+/* src/styles/main.css */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  .header, .footer {
+    background-color: #282c34;
+    color: white;
+    padding: 1rem;
+    text-align: center;
+  }
+  
+  .job-list {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .job-card {
+    border: 1px solid #ddd;
+    padding: 1rem;
+    margin: 1rem;
+    width: 300px;
+  }
+  
+  .application-form {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .application-form input, .application-form textarea, .application-form button {
+    margin-bottom: 1rem;
+  }
+  
+  .application-form button {
+    padding: 0.5rem;
+  }
+  
