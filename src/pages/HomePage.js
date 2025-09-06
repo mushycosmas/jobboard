@@ -1,4 +1,5 @@
-'use client'
+'use client';
+
 import React, { useState } from 'react';
 import JobSearch from '../components/JobSearch';
 import JobList from '../components/JobList';
@@ -17,22 +18,19 @@ const HomePage = () => {
   });
 
   const handleSearch = (newFilters) => {
-
-    console.log("kelvin cosmas",newFilters)
-
-    setFilters(newFilters); // Update filters based on user selection
-
-
-   
+    // For debugging: remove console.log before production
+    console.log("Filters updated:", newFilters);
+    setFilters(newFilters); // Update filters from JobSearch component
   };
 
   return (
     <Layout>
       <h1>Find Your Dream Job</h1>
-      <JobSearch onSearch={handleSearch} /> {/* Pass handleSearch to JobSearch */}
-      <JobList filters={filters} /> {/* JobList uses current filters */}
-      <JobCategoryList />
-      <FeaturedRecruiters />
+      <JobSearch onSearch={handleSearch} />
+      <JobList filters={filters} />
+      {/* Uncomment when ready to use */}
+      {/* <JobCategoryList /> */}
+      {/* <FeaturedRecruiters /> */}
     </Layout>
   );
 };

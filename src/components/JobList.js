@@ -2,25 +2,32 @@
 
 import React, { useState, useEffect } from 'react';
 import JobCard from './JobCard';
-import { fetchAllJobs } from '../api/api'; // Your API fetch function
 import Link from 'next/link';
 
 const JobList = ({ filters }) => {
-  const [jobs, setJobs] = useState([]); // Store fetched jobs
-  const [loading, setLoading] = useState(true); // Loading state
-  const [error, setError] = useState(null); // Error state
-  const [categoryId, setCategoryId] = useState(null); // Selected category ID
+  const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [categoryId, setCategoryId] = useState(null);
 
   useEffect(() => {
     const getJobs = async () => {
       setLoading(true);
-      console.log('Fetching jobs for categoryId:', categoryId);
-
       try {
-        const response = await fetchAllJobs(categoryId);
+        const url = categoryId
+          ? `/api/jobs?categoryId=${categoryId}`
+          : `/api/jobs`;
+
+        const res = await fetch(url);
+
+        if (!res.ok) {
+          throw new Error(`Failed to fetch jobs: ${res.status}`);
+        }
+
+        const response = await res.json();
         setJobs(response);
 
-        // Cache jobs with timestamp
+        // Optional caching in localStorage
         localStorage.setItem('jobs', JSON.stringify(response));
         localStorage.setItem('jobs_last_updated', Date.now().toString());
       } catch (err) {
@@ -35,12 +42,14 @@ const JobList = ({ filters }) => {
   }, [categoryId]);
 
   const handleCategoryChange = (event) => {
-    const selectedCategoryId = event.target.value ? parseInt(event.target.value) : null;
-    console.log('Category selected:', selectedCategoryId);
+    const selectedCategoryId = event.target.value
+      ? parseInt(event.target.value)
+      : null;
     setCategoryId(selectedCategoryId);
   };
 
-  // Filter jobs based on filters prop
+  const skillsFilter = filters.skills || [];
+
   const filteredJobs = jobs.filter((job) => {
     const jobSkills = Array.isArray(job.skill_ids)
       ? job.skill_ids
@@ -56,20 +65,23 @@ const JobList = ({ filters }) => {
 
     return (
       (filters.state ? job.region_id === parseInt(filters.state) : true) &&
-      (filters.jobType ? job.position_level_id === parseInt(filters.jobType) : true) &&
-      (filters.category ? jobCategories.includes(filters.category) : true) &&
-      (filters.skills.length > 0 ? filters.skills.every((skill) => jobSkills.includes(skill)) : true) &&
-      (filters.experience ? job.experience_id === parseInt(filters.experience) : true)
+      (filters.jobType
+        ? job.position_level_id === parseInt(filters.jobType)
+        : true) &&
+      (filters.category
+        ? jobCategories.includes(filters.category.toString())
+        : true) &&
+      (skillsFilter.length > 0
+        ? skillsFilter.every((skill) => jobSkills.includes(skill.toString()))
+        : true) &&
+      (filters.experience
+        ? job.experience_id === parseInt(filters.experience)
+        : true)
     );
   });
 
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
-  if (error) {
-    return <div>{error}</div>;
-  }
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>{error}</div>;
 
   return (
     <div className="container">
@@ -79,24 +91,27 @@ const JobList = ({ filters }) => {
             Latest Jobs
           </h2>
           <div className="d-flex ms-auto">
-            <Link href="/all-jobs" passHref legacyBehavior>
-              <a className="btn btn-text border">All Jobs</a>
+            <Link href="/all-jobs" className="btn btn-text border">
+              All Jobs
             </Link>
           </div>
         </div>
 
-        {/* Render JobCard for each filtered job */}
         {filteredJobs.slice(0, 8).map((job) => (
           <JobCard
             key={job.id}
             jobId={job.id}
-            imgSrc={job.logo ? `http://localhost:4000${job.logo}` : 'https://via.placeholder.com/100'}
+            imgSrc={
+              job.logo
+                ? `http://localhost:4000${job.logo}`
+                : 'https://via.placeholder.com/100'
+            }
             title={job.title}
-            company={job.company_name ? `${job.company_name}` : 'No employer'}
+            company={job.company_name || 'No employer'}
             location={job.address || 'No location specified'}
             date={new Date(job.posting_date).toLocaleDateString()}
-            jobType="Full-time" // Adjust as needed
-            link={job.id || '#'}
+            jobType="Full-time"
+            link={`/jobs/${job.id}`} // Adjust if route is different
           />
         ))}
       </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import { Navbar, Nav, Container, Dropdown } from 'react-bootstrap';
@@ -12,7 +13,6 @@ const Header = () => {
   const router = useRouter();
   const pathname = usePathname();
 
-  // ✅ FIX: get user from session.user
   const user = session?.user;
   const userType = user?.role;
 
@@ -54,11 +54,13 @@ const Header = () => {
           color: white !important;
           line-height: 1.2;
           font-size: 0.9rem;
+          cursor: pointer;
         }
         .nav-link-custom:hover {
           background-color: black;
           color: #f0ad4e !important;
           transform: scale(1.05);
+          text-decoration: none;
         }
         .navbar-brand img {
           height: 40px !important;
@@ -74,6 +76,7 @@ const Header = () => {
           background: transparent !important;
           border: none !important;
           box-shadow: none !important;
+          cursor: pointer;
         }
         .dropdown-toggle img {
           height: 30px;
@@ -85,7 +88,7 @@ const Header = () => {
 
       <Navbar expand="lg" fixed="top" style={{ background: '#276795' }}>
         <Container>
-          <Navbar.Brand href="/">
+          <Navbar.Brand as={Link} href="/">
             <img src={jobboardLogo.src || jobboardLogo} alt="Jobboard Logo" />
           </Navbar.Brand>
 
@@ -95,10 +98,14 @@ const Header = () => {
 
           <Navbar.Collapse id="navbarSupportedContent">
             <Nav className="ms-auto me-auto">
-              <Nav.Link href="/" className="nav-link-custom">Home</Nav.Link>
-              <Nav.Link href="/all-jobs" className="nav-link-custom">Jobs</Nav.Link>
+              <Nav.Link as={Link} href="/" className="nav-link-custom">
+                Home
+              </Nav.Link>
+              <Nav.Link as={Link} href="/all-jobs" className="nav-link-custom">
+                Jobs
+              </Nav.Link>
               {userType === 'employer' && (
-                <Nav.Link href="/employer/manage-jobs" className="nav-link-custom">
+                <Nav.Link as={Link} href="/employer/manage-jobs" className="nav-link-custom">
                   Manage Jobs
                 </Nav.Link>
               )}
@@ -107,23 +114,33 @@ const Header = () => {
             <Nav className="ms-auto">
               {status === 'loading' ? null : !user ? (
                 <>
-                  <Nav.Link href="/auth/login" className="nav-link-custom">Login</Nav.Link>
-                  <Nav.Link href="/auth/register" className="nav-link-custom">Register</Nav.Link>
+                  <Nav.Link as={Link} href="/auth/login" className="nav-link-custom">
+                    Login
+                  </Nav.Link>
+                  <Nav.Link as={Link} href="/auth/register" className="nav-link-custom">
+                    Register
+                  </Nav.Link>
                 </>
               ) : (
                 <Dropdown align="end">
                   <Dropdown.Toggle className="nav-link-custom">
                     <img
-                      src={'https://via.placeholder.com/100'}
+                      src={user.image || 'https://via.placeholder.com/100'}
                       alt="Profile"
                     />
                     {renderUserName()}
                   </Dropdown.Toggle>
 
                   <Dropdown.Menu>
-                    <Dropdown.Item href="/profile">Profile</Dropdown.Item>
-                    <Dropdown.Item href={getDashboardLink()}>Dashboard</Dropdown.Item>
-                    <Dropdown.Item href="/settings">Settings</Dropdown.Item>
+                    <Dropdown.Item as={Link} href="/profile">
+                      Profile
+                    </Dropdown.Item>
+                    <Dropdown.Item as={Link} href={getDashboardLink()}>
+                      Dashboard
+                    </Dropdown.Item>
+                    <Dropdown.Item as={Link} href="/settings">
+                      Settings
+                    </Dropdown.Item>
                     <Dropdown.Divider />
                     <Dropdown.Item onClick={handleLogout}>Logout</Dropdown.Item>
                   </Dropdown.Menu>

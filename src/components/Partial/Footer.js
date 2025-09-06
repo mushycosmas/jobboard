@@ -7,15 +7,17 @@ import { FaFacebookF, FaLinkedinIn, FaTwitter, FaRss } from 'react-icons/fa';
 
 const Footer = () => {
   const [showModal, setShowModal] = useState(false);
-  const [modalContent, setModalContent] = useState('');
+  const [modalContent, setModalContent] = useState(null); // 'about' | 'contact' | null
 
-  // Removed ": string" type annotation here
-  const handleModalOpen = (content) => {
-    setModalContent(content);
+  const handleModalOpen = (contentType) => {
+    setModalContent(contentType);
     setShowModal(true);
   };
 
-  const handleModalClose = () => setShowModal(false);
+  const handleModalClose = () => {
+    setShowModal(false);
+    setModalContent(null);
+  };
 
   return (
     <div className="container-fluid py-3" style={{ backgroundColor: '#276795', color: 'white' }}>
@@ -31,7 +33,7 @@ const Footer = () => {
             />
             <p className="copyright">
               © 2024{' '}
-              <Link href="/" style={{ color: 'white', textDecoration: 'none' }}>
+              <Link href="/" className="text-white" style={{ textDecoration: 'none' }}>
                 JOBBOARD DEMO
               </Link>
             </p>
@@ -88,18 +90,18 @@ const Footer = () => {
             <p><strong>JOB SEEKER</strong></p>
             <ul className="list-unstyled">
               <li>
-                <Link href="/register" legacyBehavior>
-                  <a className="text-white">Sign up</a>
+                <Link href="/register" className="text-white">
+                  Sign up
                 </Link>
               </li>
               <li>
-                <Link href="/job-search" legacyBehavior>
-                  <a className="text-white">Search jobs</a>
+                <Link href="/job-search" className="text-white">
+                  Search jobs
                 </Link>
               </li>
               <li>
-                <Link href="/login" legacyBehavior>
-                  <a className="text-white">Sign in</a>
+                <Link href="/login" className="text-white">
+                  Sign in
                 </Link>
               </li>
             </ul>
@@ -109,18 +111,18 @@ const Footer = () => {
             <p><strong>EMPLOYER</strong></p>
             <ul className="list-unstyled">
               <li>
-                <Link href="/post-job" legacyBehavior>
-                  <a className="text-white">Post a job</a>
+                <Link href="/post-job" className="text-white">
+                  Post a job
                 </Link>
               </li>
               <li>
-                <Link href="/login" legacyBehavior>
-                  <a className="text-white">Sign in</a>
+                <Link href="/login" className="text-white">
+                  Sign in
                 </Link>
               </li>
               <li>
-                <Link href="/register" legacyBehavior>
-                  <a className="text-white">Sign up</a>
+                <Link href="/register" className="text-white">
+                  Sign up
                 </Link>
               </li>
             </ul>
@@ -135,7 +137,7 @@ const Footer = () => {
                   className="text-white"
                   onClick={(e) => {
                     e.preventDefault();
-                    handleModalOpen('About Us Content');
+                    handleModalOpen('about');
                   }}
                 >
                   About us
@@ -147,7 +149,7 @@ const Footer = () => {
                   className="text-white"
                   onClick={(e) => {
                     e.preventDefault();
-                    handleModalOpen('Contact Us Content');
+                    handleModalOpen('contact');
                   }}
                 >
                   Contact
@@ -161,13 +163,16 @@ const Footer = () => {
       {/* Modal */}
       <Modal show={showModal} onHide={handleModalClose}>
         <Modal.Header closeButton>
-          <Modal.Title>{modalContent === 'About Us Content' ? 'About Us' : 'Contact Us'}</Modal.Title>
+          <Modal.Title>{modalContent === 'about' ? 'About Us' : 'Contact Us'}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          {modalContent === 'About Us Content' ? (
+          {modalContent === 'about' ? (
             <div>
               <h5>About Us</h5>
-              <p>We are a leading job board platform helping job seekers and employers find the best match for their needs.</p>
+              <p>
+                We are a leading job board platform helping job seekers and employers find the best
+                match for their needs.
+              </p>
             </div>
           ) : (
             <div>
