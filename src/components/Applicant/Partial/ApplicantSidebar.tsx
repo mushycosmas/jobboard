@@ -162,7 +162,7 @@ const ApplicantSidebar: React.FC = () => {
               <Link href="/applicant/language">Language Proficiency</Link>
             </div>
             <div className="pb-1">
-              <Link href="/applicant/working-experience">Work Experience</Link>
+              <Link href="/applicant/profile/workExperience">Work Experience</Link>
             </div>
             <div className="pb-1">
               <Link href="/applicant/skills">Skills</Link>

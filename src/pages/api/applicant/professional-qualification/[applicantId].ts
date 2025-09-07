@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { db } from "@/lib/db";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 
-// Helper to fetch qualifications for an applicant
+// Fetch qualifications for an applicant
 async function getQualifications(applicantId: number) {
   const query = `
     SELECT 
@@ -33,8 +33,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!applicantIdParam || Array.isArray(applicantIdParam)) {
       return res.status(400).json({ message: "Applicant ID is required and must be a single value" });
     }
+
     const applicantId = Number(applicantIdParam);
-    if (isNaN(applicantId)) return res.status(400).json({ message: "Applicant ID must be a number" });
+    if (isNaN(applicantId)) {
+      return res.status(400).json({ message: "Applicant ID must be a number" });
+    }
 
     switch (req.method) {
       case "GET": {
@@ -54,6 +57,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             (applicant_id, country_id, institution_id, course_id, started, ended, creator_id, updator_id)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?);
         `;
+
         const [result]: any = await db.execute<ResultSetHeader>(insertQuery, [
           applicantId,
           Number(country_id),
@@ -65,7 +69,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           updator_id || null,
         ]);
 
-        // Fetch the inserted row
         const [newRow] = await db.execute<RowDataPacket[]>(`
           SELECT 
             ap.id,
@@ -91,6 +94,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       case "PUT": {
         const { id, country_id, institution_id, course_id, started, ended, updator_id } = req.body;
+
         if (!id) return res.status(400).json({ message: "Qualification ID required" });
         if (!country_id || !institution_id || !course_id) {
           return res.status(400).json({ message: "Country, Institution, and Course are required" });
@@ -101,6 +105,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           SET country_id = ?, institution_id = ?, course_id = ?, started = ?, ended = ?, updator_id = ?
           WHERE id = ?;
         `;
+
         await db.execute(updateQuery, [
           Number(country_id),
           Number(institution_id),
@@ -135,10 +140,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       case "DELETE": {
-        const qualId = req.body.id || req.query.id;
-        if (!qualId) return res.status(400).json({ message: "Qualification ID required" });
-        await db.execute(`DELETE FROM applicant_professionals WHERE id = ?`, [Number(qualId)]);
-        return res.status(200).json({ message: "Qualification deleted successfully" });
+     const { id } = req.body; // qualification id
+  if (!id) return res.status(400).json({ message: "Qualification ID is required" });
+
+  await db.query("DELETE FROM applicant_professionals WHERE id = ?", [id]);
+  return res.status(200).json({ message: "Deleted successfully" });
       }
 
       default:
