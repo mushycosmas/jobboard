@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const categoryId = searchParams.get('categoryId');
+  const limit = searchParams.get('limit'); // Get the limit from the URL
 
   try {
     let query = `
@@ -26,9 +27,16 @@ export async function GET(request: Request) {
 
     const values: any[] = [];
 
+    // Handle category filter
     if (categoryId) {
       query += ' WHERE FIND_IN_SET(?, jobs.category_ids)';
       values.push(categoryId);
+    }
+
+    // Add limit if provided and is a number
+    if (limit && !isNaN(Number(limit))) {
+      query += ' LIMIT ?';
+      values.push(Number(limit));
     }
 
     const [rows] = await db.query(query, values);

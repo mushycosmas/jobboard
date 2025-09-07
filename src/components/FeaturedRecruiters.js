@@ -1,11 +1,11 @@
-'use client'
+'use client';
+
 import React, { useEffect, useState, useRef } from 'react';
 import RecruiterCard from './RecruiterCard'; // Import the RecruiterCard component
 import { Container, Spinner } from 'react-bootstrap';
-import { fetchAllEmployer } from '../api/api';
-import { ChevronLeft, ChevronRight } from 'lucide-react'; // Import icons for arrows
+import { ChevronLeft, ChevronRight } from 'lucide-react'; // Icons for arrows
 
-const CACHE_DURATION = 60 * 60 * 1000; // 1 hour in milliseconds
+const CACHE_DURATION = 60 * 60 * 1000; // 1 hour
 
 const FeaturedRecruiters = () => {
   const [recruiters, setRecruiters] = useState([]);
@@ -16,12 +16,11 @@ const FeaturedRecruiters = () => {
     const fetchRecruiters = async () => {
       setLoading(true);
 
-      const cacheKey = `recruiters`;
+      const cacheKey = 'recruiters';
       const cachedData = localStorage.getItem(cacheKey);
 
       if (cachedData) {
         const parsedData = JSON.parse(cachedData);
-
         if (Date.now() - parsedData.timestamp < CACHE_DURATION) {
           setRecruiters(parsedData.data);
           setLoading(false);
@@ -30,14 +29,19 @@ const FeaturedRecruiters = () => {
       }
 
       try {
-        const data = await fetchAllEmployer();
+        // Fetch from your Next.js API route
+        const res = await fetch('/api/employers'); // <-- Adjust path if needed
+        if (!res.ok) {
+          throw new Error('Failed to fetch recruiters');
+        }
+        const data = await res.json();
+
         setRecruiters(data);
 
-        const dataToStore = {
-          data,
-          timestamp: Date.now(),
-        };
-        localStorage.setItem(cacheKey, JSON.stringify(dataToStore));
+        localStorage.setItem(
+          cacheKey,
+          JSON.stringify({ data, timestamp: Date.now() })
+        );
       } catch (error) {
         console.error('Error fetching recruiters:', error);
       } finally {
@@ -50,7 +54,8 @@ const FeaturedRecruiters = () => {
 
   const scroll = (direction) => {
     const container = scrollContainerRef.current;
-    const scrollAmount = 200; // Adjust the scroll amount for each button press
+    if (!container) return;
+    const scrollAmount = 200;
     container.scrollBy({
       left: direction === 'left' ? -scrollAmount : scrollAmount,
       behavior: 'smooth',
@@ -79,10 +84,11 @@ const FeaturedRecruiters = () => {
             >
               <ChevronLeft size={24} />
             </button>
+
             <div className="recruiter-list" ref={scrollContainerRef}>
-              {recruiters.map((recruiter, index) => (
+              {recruiters.map((recruiter) => (
                 <RecruiterCard
-                  key={index}
+                  key={recruiter.id}
                   imgSrc={recruiter.logo}
                   altText={recruiter.company_name}
                   link={`employer/profile/${recruiter.id}`}
@@ -90,6 +96,7 @@ const FeaturedRecruiters = () => {
                 />
               ))}
             </div>
+
             <button
               className="scroll-button right"
               onClick={() => scroll('right')}
@@ -141,11 +148,11 @@ const FeaturedRecruiters = () => {
           display: flex;
           overflow-x: auto;
           scroll-behavior: smooth;
-          scrollbar-width: none; /* For Firefox */
+          scrollbar-width: none; /* Firefox */
         }
 
         .recruiter-list::-webkit-scrollbar {
-          display: none; /* For Chrome, Safari, and Edge */
+          display: none; /* Chrome, Safari, Edge */
         }
 
         .recruiter-list > * {

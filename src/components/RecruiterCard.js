@@ -24,23 +24,19 @@ const RecruiterCard = ({ imgSrc, altText, link, title }) => {
   return (
     <div className="col-6 col-sm-3 col-md-2 col-lg-2 col-xl-2 mb-4">
       <div className="card h-100 border-0 rounded-lg shadow-sm">
-        <Link href={link} passHref legacyBehavior>
-          <a>
-            <div className="d-flex justify-content-center align-items-center p-4">
-              <img
-                src={imgSrc ? `http://localhost:4000${imgSrc}` : 'https://via.placeholder.com/100'}
-                alt={altText}
-                title={title}
-                className="card-img-top theme1-featured-logo"
-                style={{
-                  ...styles.theme1FeaturedLogo,
-                  ...(hovered ? styles.theme1FeaturedLogoHover : {}),
-                }}
-                onMouseEnter={() => setHovered(true)}
-                onMouseLeave={() => setHovered(false)}
-              />
-            </div>
-          </a>
+        <Link href={link} className="d-flex justify-content-center align-items-center p-4">
+          <img
+            src={imgSrc ? `http://localhost:4000${imgSrc}` : 'https://via.placeholder.com/100'}
+            alt={altText}
+            title={title}
+            className="card-img-top theme1-featured-logo"
+            style={{
+              ...styles.theme1FeaturedLogo,
+              ...(hovered ? styles.theme1FeaturedLogoHover : {}),
+            }}
+            onMouseEnter={() => setHovered(true)}
+            onMouseLeave={() => setHovered(false)}
+          />
         </Link>
       </div>
     </div>

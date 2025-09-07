@@ -101,7 +101,7 @@ const Header = () => {
               <Nav.Link as={Link} href="/" className="nav-link-custom">
                 Home
               </Nav.Link>
-              <Nav.Link as={Link} href="/all-jobs" className="nav-link-custom">
+              <Nav.Link as={Link} href="/job/all" className="nav-link-custom">
                 Jobs
               </Nav.Link>
               {userType === 'employer' && (

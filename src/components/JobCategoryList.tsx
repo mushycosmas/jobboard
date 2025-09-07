@@ -2,27 +2,34 @@
 
 import React, { useEffect, useState } from 'react';
 import { Container, Row, Col } from 'react-bootstrap';
-import JobCategoryCard from './JobCategoryCard'; // Import JobCategoryCard
-import { fetchAllIndustry } from '../api/api'; // Your API fetch function
+import JobCategoryCard from './JobCategoryCard';
 import Link from 'next/link';
 
-const CACHE_DURATION = 60 * 60 * 1000; // 1 hour in milliseconds
+const CACHE_DURATION = 60 * 60 * 1000; // 1 hour
 
-const JobCategoryList = () => {
-  const [categories, setCategories] = useState([]); // Store fetched categories
-  const [loading, setLoading] = useState(true); // Loading state
+// Define the category type
+interface Category {
+  id: number;
+  category: string;
+  slug: string;
+  job_count: number;
+}
+
+// Type for grouped categories
+type CategoryGroup = Category[][];
+
+const JobCategoryList: React.FC = () => {
+  const [categories, setCategories] = useState<CategoryGroup>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadCategories = async () => {
       setLoading(true);
-
       const cacheKey = 'job_categories';
       const cachedData = localStorage.getItem(cacheKey);
 
       if (cachedData) {
         const parsedData = JSON.parse(cachedData);
-
-        // Check if cache is valid
         if (Date.now() - parsedData.timestamp < CACHE_DURATION) {
           setCategories(parsedData.data);
           setLoading(false);
@@ -31,15 +38,16 @@ const JobCategoryList = () => {
       }
 
       try {
-        // Fetch fresh data
-        const data = await fetchAllIndustry();
-        const groupedCategories = groupCategories(data);
-        setCategories(groupedCategories);
+        const res = await fetch('/api/industries');
+        if (!res.ok) throw new Error('Failed to fetch industries');
 
-        // Cache with timestamp
+        const data: Category[] = await res.json();
+        const grouped = groupCategories(data);
+        setCategories(grouped);
+
         localStorage.setItem(
           cacheKey,
-          JSON.stringify({ data: groupedCategories, timestamp: Date.now() })
+          JSON.stringify({ data: grouped, timestamp: Date.now() })
         );
       } catch (error) {
         console.error('Error fetching industries:', error);
@@ -51,45 +59,40 @@ const JobCategoryList = () => {
     loadCategories();
   }, []);
 
-  // Group categories into chunks of 3
-  const groupCategories = (data) => {
+  // Group categories in chunks of 3
+  const groupCategories = (data: Category[]): CategoryGroup => {
     const chunkSize = 3;
-    return data.reduce((result, item, index) => {
-      const chunkIndex = Math.floor(index / chunkSize);
-      if (!result[chunkIndex]) {
-        result[chunkIndex] = [];
-      }
-      result[chunkIndex].push(item);
-      return result;
-    }, []);
+    const result: CategoryGroup = [];
+    for (let i = 0; i < data.length; i += chunkSize) {
+      result.push(data.slice(i, i + chunkSize));
+    }
+    return result;
   };
 
-  if (loading) {
-    return <p>Loading...</p>;
-  }
+  if (loading) return <p>Loading...</p>;
 
   return (
     <Container className="mt-5">
-      {/* Categories Section */}
       <Row className="mb-3 d-flex align-items-center">
         <Col>
-          <h2 style={{ fontSize: '30px' }}>Jobs by Categories</h2>
+          <h2 className="fw-bold" style={{ fontSize: '30px' }}>
+            Jobs by Categories
+          </h2>
         </Col>
         <Col className="d-flex justify-content-end">
-          <Link href="/home/all-category" passHref legacyBehavior>
-            <a className="btn btn-text border">All Industry</a>
+          <Link href="/all-industries" className="btn btn-outline-secondary">
+            All Industry
           </Link>
         </Col>
       </Row>
 
-      {/* Job Categories */}
       <Row>
-        {categories.map((categoryGroup, index) => (
+        {categories.map((group, index) => (
           <Col md={4} key={index}>
             <div className="categories my-2">
-              {categoryGroup.map((category, idx) => (
+              {group.map((category) => (
                 <JobCategoryCard
-                  key={idx}
+                  key={category.id}
                   name={category.category}
                   id={category.id}
                   slug={category.slug}

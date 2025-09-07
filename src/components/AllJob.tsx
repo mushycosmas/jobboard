@@ -1,14 +1,16 @@
-'use client'
+'use client';
+
 import React, { useState, useContext, useEffect } from 'react';
-import { Container, Row, Col, Card, Form, Button, InputGroup } from 'react-bootstrap';
+import { Container, Row, Col, Card, Form, Button } from 'react-bootstrap';
 import Select from 'react-select';
 import { UniversalDataContext } from '../context/UniversalDataContext';
 import AllJobList from './AllJobList';
 import JobPreview from './JobPreview';
-import { useParams } from 'react-router-dom';
+import { useRouter } from 'next/router';  // Use next/router instead
 
 const AllJobs = ({ jobs }) => {
-  const { slug, id } = useParams();
+  const router = useRouter();  // Use useRouter hook to access route params
+  const { slug, id } = router.query;  // Retrieve slug and id from the query
 
   const { categories, jobTypes, skills, experiences, levels, states } = useContext(UniversalDataContext);
 

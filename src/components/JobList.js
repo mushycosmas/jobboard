@@ -4,42 +4,43 @@ import React, { useState, useEffect } from 'react';
 import JobCard from './JobCard';
 import Link from 'next/link';
 
-const JobList = ({ filters }) => {
+const JobList = ({ filters = {} }) => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [categoryId, setCategoryId] = useState(null);
 
-  useEffect(() => {
-    const getJobs = async () => {
-      setLoading(true);
-      try {
-        const url = categoryId
-          ? `/api/jobs?categoryId=${categoryId}`
-          : `/api/jobs`;
+useEffect(() => {
+  const getJobs = async () => {
+    setLoading(true);
+    try {
+      const url = categoryId
+        ? `/api/jobs?categoryId=${categoryId}&limit=12`
+        : `/api/jobs?limit=12`; // Add default limit
 
-        const res = await fetch(url);
+      const res = await fetch(url);
 
-        if (!res.ok) {
-          throw new Error(`Failed to fetch jobs: ${res.status}`);
-        }
-
-        const response = await res.json();
-        setJobs(response);
-
-        // Optional caching in localStorage
-        localStorage.setItem('jobs', JSON.stringify(response));
-        localStorage.setItem('jobs_last_updated', Date.now().toString());
-      } catch (err) {
-        setError('Failed to fetch jobs');
-        console.error(err);
-      } finally {
-        setLoading(false);
+      if (!res.ok) {
+        throw new Error(`Failed to fetch jobs: ${res.status}`);
       }
-    };
 
-    getJobs();
-  }, [categoryId]);
+      const response = await res.json();
+      setJobs(response);
+
+      // Optional caching
+      localStorage.setItem('jobs', JSON.stringify(response));
+      localStorage.setItem('jobs_last_updated', Date.now().toString());
+    } catch (err) {
+      setError('Failed to fetch jobs');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  getJobs();
+}, [categoryId]);
+
 
   const handleCategoryChange = (event) => {
     const selectedCategoryId = event.target.value
@@ -91,28 +92,14 @@ const JobList = ({ filters }) => {
             Latest Jobs
           </h2>
           <div className="d-flex ms-auto">
-            <Link href="/all-jobs" className="btn btn-text border">
+            <Link href="/job/all" className="btn btn-text border">
               All Jobs
             </Link>
           </div>
         </div>
 
         {filteredJobs.slice(0, 8).map((job) => (
-          <JobCard
-            key={job.id}
-            jobId={job.id}
-            imgSrc={
-              job.logo
-                ? `http://localhost:4000${job.logo}`
-                : 'https://via.placeholder.com/100'
-            }
-            title={job.title}
-            company={job.company_name || 'No employer'}
-            location={job.address || 'No location specified'}
-            date={new Date(job.posting_date).toLocaleDateString()}
-            jobType="Full-time"
-            link={`/jobs/${job.id}`} // Adjust if route is different
-          />
+          <JobCard key={job.id} job={job} />
         ))}
       </div>
     </div>

@@ -1,8 +1,25 @@
-'use client'
+'use client';
+
 import React, { useState } from 'react';
 import { Button, ListGroup, Image, Pagination } from 'react-bootstrap';
-import { Link } from 'react-router-dom';
-const JobList = ({ jobs, onJobSelect }) => {
+import Link from 'next/link';  // Using next/link for routing
+
+interface Job {
+  id: number;
+  title: string;
+  company_name: string;
+  logo: string;
+  address: string;
+  posting_date: string;
+  url: string;
+}
+
+interface JobListProps {
+  jobs: Job[];
+  onJobSelect: (job: Job) => void;
+}
+
+const JobList: React.FC<JobListProps> = ({ jobs, onJobSelect }) => {
   const itemsPerPage = 5; // Number of jobs per page
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -15,25 +32,26 @@ const JobList = ({ jobs, onJobSelect }) => {
   const currentJobs = jobs.slice(startIndex, endIndex);
 
   // Handle page change
-  const handlePageChange = (page) => {
+  const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
 
   return (
     <div>
       <div className="mb-2">
-      <Link to="/login">
+        <Link href="/login" passHref>
           <Button variant="primary" className="me-3">
             Registered User
           </Button>
         </Link>
-        
-        <Link to="/register">
+
+        <Link href="/register" passHref>
           <Button variant="outline-primary">
             New User
           </Button>
         </Link>
       </div>
+      
       <div style={{ color: '#2f7b15', fontSize: '0.875rem' }}>
         {jobs.length} Jobs Found.
       </div>
@@ -43,11 +61,17 @@ const JobList = ({ jobs, onJobSelect }) => {
           <ListGroup.Item key={job.id} action onClick={() => onJobSelect(job)}>
             <div className="d-flex align-items-start py-3">
               <div className="me-3">
-                <Image src={`http://localhost:4000${job.logo}`} rounded style={{ width: '50px', height: '50px' }} />
+                <Image 
+                  src={`http://localhost:4000${job.logo}`} 
+                  rounded 
+                  style={{ width: '50px', height: '50px' }} 
+                />
               </div>
               <div className="flex-grow-1">
                 <h6 className="m-0">
-                  <a href={job.url}>{job.title}</a>
+                  <a href={job.url} target="_blank" rel="noopener noreferrer">
+                    {job.title}
+                  </a>
                 </h6>
                 <div>{job.company_name}</div>
                 <div>{job.address}</div>

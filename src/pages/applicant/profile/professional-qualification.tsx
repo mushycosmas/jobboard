@@ -1,12 +1,12 @@
 "use client";
 
 import ApplicantLayout from "@/components/Applicant/Partial/ApplicantLayout";
-import AcademicQualification from "@/components/Applicant/AcademicQualification/AcademicQualification";
+import ProfessionalQualifications from "@/components/Applicant/ProfessionalQualification/ProfessionalQualifications";
 
 export default function AcademicQualificationPage() {
   return (
     <ApplicantLayout>
-      <AcademicQualification />
+      <ProfessionalQualifications />
     </ApplicantLayout>
   );
 }

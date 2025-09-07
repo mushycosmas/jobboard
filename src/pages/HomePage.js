@@ -29,8 +29,8 @@ const HomePage = () => {
       <JobSearch onSearch={handleSearch} />
       <JobList filters={filters} />
       {/* Uncomment when ready to use */}
-      {/* <JobCategoryList /> */}
-      {/* <FeaturedRecruiters /> */}
+      <JobCategoryList />
+      <FeaturedRecruiters />
     </Layout>
   );
 };
