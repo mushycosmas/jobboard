@@ -159,22 +159,22 @@ const ApplicantSidebar: React.FC = () => {
               <Link href="/applicant/profile/professional-qualification">Professional Qualifications</Link>
             </div>
             <div className="pb-1">
-              <Link href="/applicant/language">Language Proficiency</Link>
+              <Link href="/applicant/profile/language-proficiency">Language Proficiency</Link>
             </div>
             <div className="pb-1">
               <Link href="/applicant/profile/workExperience">Work Experience</Link>
             </div>
             <div className="pb-1">
-              <Link href="/applicant/skills">Skills</Link>
+              <Link href="/applicant/profile/skills">Skills</Link>
             </div>
             <div className="pb-1">
-              <Link href="/applicant/referees">Referees</Link>
+              <Link href="/applicant/profile/referees">Referees</Link>
             </div>
             <div className="pb-1">
-              <Link href="/applicant/social-media">Social Media</Link>
+              <Link href="/applicant/profile/social-media">Social Media</Link>
             </div>
             <div className="pb-1">
-              <Link href="/applicant/change-password">Change Password</Link>
+              <Link href="/applicant/profile/change-password">Change Password</Link>
             </div>
           </Accordion.Body>
         </Accordion.Item>

@@ -1,4 +1,4 @@
-// src/pages/api/applicant/experiences/[applicantId].ts
+// src/pages/api/applicant/language-profiency/[applicantId].ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import { db } from "@/lib/db";
 
@@ -11,134 +11,106 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   switch (req.method) {
     case "GET":
-      return getExperiences(applicantId, res);
+      return getLanguages(applicantId, res);
     case "POST":
-      return saveExperience(req, res, applicantId);
+      return saveLanguage(req, res, applicantId);
     case "PUT":
-      return updateExperience(req, res, applicantId);
+      return updateLanguage(req, res, applicantId);
     case "DELETE":
-      return deleteExperience(req, res, applicantId);
+      return deleteLanguage(req, res, applicantId);
     default:
       return res.status(405).json({ message: "Method not allowed" });
   }
 }
 
 /**
- * GET all experiences
+ * GET all languages
  */
-async function getExperiences(applicantId: string, res: NextApiResponse) {
+async function getLanguages(applicantId: string, res: NextApiResponse) {
   try {
-    const [rows] = await db.query(
-      `
+    const [rows] = await db.query(`
       SELECT 
-        ae.id, 
-        i.name AS institution, 
-        p.name AS position, 
-        ae.from_date AS \`from\`, 
-        ae.to_date AS \`to\`, 
-        ae.is_currently_working,
-        ae.responsibility AS responsibilities
-      FROM applicant_experiences ae
-      JOIN institutions i ON ae.institution_id = i.id
-      JOIN positions p ON ae.position_id = p.id
-      WHERE ae.applicant_id = ?
-      ORDER BY ae.from_date DESC
-      `,
-      [applicantId]
-    );
+        al.id,
+        l.name,
+        rw.name AS writing_skill,
+        rd.name AS reading_skill,
+        sp.name AS speaking_skill
+      FROM applicant_languages al
+      JOIN languages l ON al.language_id = l.id
+      LEFT JOIN language_writes rw ON al.write_id = rw.id
+      LEFT JOIN language_reads rd ON al.read_id = rd.id
+      LEFT JOIN language_speaks sp ON al.speak_id = sp.id
+      WHERE al.applicant_id = ?
+    `, [applicantId]);
+
     return res.status(200).json(rows);
   } catch (err) {
-    console.error("Error fetching experiences:", err);
-    return res.status(500).json({ message: "Failed to fetch experiences" });
+    console.error("Error fetching languages:", err);
+    return res.status(500).json({ message: "Failed to fetch languages" });
   }
 }
 
 /**
- * POST new experience
+ * POST new language
  */
-async function saveExperience(req: NextApiRequest, res: NextApiResponse, applicantId: string) {
+async function saveLanguage(req: NextApiRequest, res: NextApiResponse, applicantId: string) {
   try {
-    const { institution_id, position_id, from_date, to_date, is_currently_working, responsibility } = req.body;
+    const { language_id, speak_id, read_id, write_id } = req.body;
 
-    if (!institution_id || !position_id || !from_date) {
-      return res.status(400).json({ message: "Institution, Position, and From date are required" });
+    if (!language_id || !speak_id || !read_id || !write_id) {
+      return res.status(400).json({ message: "All fields are required" });
     }
 
-    const [result] = await db.query(
-      `
-      INSERT INTO applicant_experiences 
-        (applicant_id, institution_id, position_id, from_date, to_date, is_currently_working, responsibility)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-      `,
-      [
-        applicantId,
-        institution_id,
-        position_id,
-        from_date,
-        to_date || null,
-        is_currently_working ? 1 : 0,
-        responsibility || null,
-      ]
-    );
+    const [result] = await db.query(`
+      INSERT INTO applicant_languages (applicant_id, language_id, speak_id, read_id, write_id)
+      VALUES (?, ?, ?, ?, ?)
+    `, [applicantId, language_id, speak_id, read_id, write_id]);
 
-    return res.status(201).json({ id: (result as any).insertId, message: "Experience saved successfully" });
+    const insertedId = (result as any).insertId;
+    const [newRow] = await db.query(`SELECT * FROM applicant_languages WHERE id = ?`, [insertedId]);
+
+    return res.status(201).json((newRow as any)[0]);
   } catch (err) {
-    console.error("Error saving experience:", err);
-    return res.status(500).json({ message: "Failed to save experience" });
+    console.error("Error saving language:", err);
+    return res.status(500).json({ message: "Failed to save language" });
   }
 }
 
 /**
- * PUT update experience
+ * PUT update language
  */
-async function updateExperience(req: NextApiRequest, res: NextApiResponse, applicantId: string) {
+async function updateLanguage(req: NextApiRequest, res: NextApiResponse, applicantId: string) {
   try {
-    const { id, institution_id, position_id, from_date, to_date, is_currently_working, responsibility } = req.body;
+    const { id, language_id, speak_id, read_id, write_id } = req.body;
 
-    if (!id) {
-      return res.status(400).json({ message: "Experience ID is required" });
-    }
+    if (!id) return res.status(400).json({ message: "Language ID is required" });
 
-    await db.query(
-      `
-      UPDATE applicant_experiences
-      SET institution_id = ?, position_id = ?, from_date = ?, to_date = ?, is_currently_working = ?, responsibility = ?
+    await db.query(`
+      UPDATE applicant_languages
+      SET language_id = ?, speak_id = ?, read_id = ?, write_id = ?
       WHERE id = ? AND applicant_id = ?
-      `,
-      [
-        institution_id,
-        position_id,
-        from_date,
-        to_date || null,
-        is_currently_working ? 1 : 0,
-        responsibility || null,
-        id,
-        applicantId,
-      ]
-    );
+    `, [language_id, speak_id, read_id, write_id, id, applicantId]);
 
-    return res.status(200).json({ message: "Experience updated successfully" });
+    return res.status(200).json({ message: "Language updated successfully" });
   } catch (err) {
-    console.error("Error updating experience:", err);
-    return res.status(500).json({ message: "Failed to update experience" });
+    console.error("Error updating language:", err);
+    return res.status(500).json({ message: "Failed to update language" });
   }
 }
 
 /**
- * DELETE experience
+ * DELETE language
  */
-async function deleteExperience(req: NextApiRequest, res: NextApiResponse, applicantId: string) {
+async function deleteLanguage(req: NextApiRequest, res: NextApiResponse, applicantId: string) {
   try {
     const { id } = req.query;
-    if (!id || Array.isArray(id)) {
-      return res.status(400).json({ message: "Experience ID is required" });
-    }
+    if (!id || Array.isArray(id)) return res.status(400).json({ message: "Language ID is required" });
 
-    await db.query("DELETE FROM applicant_experiences WHERE id = ? AND applicant_id = ?", [id, applicantId]);
+    await db.query(`DELETE FROM applicant_languages WHERE id = ? AND applicant_id = ?`, [id, applicantId]);
 
-    return res.status(200).json({ message: "Experience deleted successfully" });
+    return res.status(200).json({ message: "Language deleted successfully" });
   } catch (err) {
-    console.error("Error deleting experience:", err);
-    return res.status(500).json({ message: "Failed to delete experience" });
+    console.error("Error deleting language:", err);
+    return res.status(500).json({ message: "Failed to delete language" });
   }
 }

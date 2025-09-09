@@ -5,6 +5,7 @@ import { Button, Card, Container } from 'react-bootstrap';
 import { UniversalDataContext } from '@/context/UniversalDataContext';
 import WorkExperienceTable from './WorkExperienceTable';
 import WorkExperienceModal from './WorkExperienceModal';
+import { useSession } from "next-auth/react";
 
 export interface WorkExperienceData {
   id: number;
@@ -16,6 +17,7 @@ export interface WorkExperienceData {
   responsibilities: string;
   institution?: string;
   position?: string;
+  is_currently_working?: boolean;
 }
 
 const WorkExperience: React.FC = () => {
@@ -23,9 +25,11 @@ const WorkExperience: React.FC = () => {
   const [workExperiences, setWorkExperiences] = useState<WorkExperienceData[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [editingExperience, setEditingExperience] = useState<WorkExperienceData | null>(null);
+  const { data: session, status } = useSession();
+  const [applicantId, setApplicantId] = useState<string | null>(null);
 
-  const applicantId = typeof window !== 'undefined' ? localStorage.getItem('applicantId') : null;
 
+  // Fetch all experiences
   const fetchWorkExperiences = async () => {
     if (!applicantId) return;
     try {
@@ -38,15 +42,23 @@ const WorkExperience: React.FC = () => {
     }
   };
 
+    useEffect(() => {
+      if (status === "authenticated" && session?.user?.applicantId) {
+        setApplicantId(session.user.applicantId.toString());
+      }
+    }, [session, status]);
+
   useEffect(() => {
     fetchWorkExperiences();
   }, [applicantId]);
 
+  // Open modal to add new experience
   const handleAdd = () => {
     setEditingExperience(null);
     setShowModal(true);
   };
 
+  // Open modal to edit existing experience
   const handleEdit = (id: number) => {
     const exp = workExperiences.find((e) => e.id === id);
     if (exp) {
@@ -55,25 +67,48 @@ const WorkExperience: React.FC = () => {
     }
   };
 
+  // Delete experience
   const handleDelete = async (id: number) => {
+    if (!applicantId) return;
     if (!confirm('Are you sure you want to delete this experience?')) return;
+
     try {
-      const res = await fetch(`/api/applicant/experiences/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Failed to delete experience');
+      const res = await fetch(`/api/applicant/experiences/${applicantId}?id=${id}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text);
+      }
       await fetchWorkExperiences();
     } catch (err) {
-      console.error(err);
+      console.error('Delete failed:', err);
+      alert('Failed to delete experience');
     }
   };
 
+  // Save or update experience
   const handleSave = async (data: Partial<WorkExperienceData> & { id?: number }) => {
+
+
+    console.log("kelvin cosmas i'm reach here",applicantId);
+
     if (!applicantId) return;
+
     try {
-      const url = data.id
-        ? `/api/applicant/experiences/${data.id}` // update
-        : `/api/applicant/experiences/${applicantId}`; // create
+      // Map frontend fields to API fields
+      const payload = {
+        id: data.id,
+        institution_id: data.institution_id,
+        position_id: data.position_id,
+        from_date: data.from,
+        to_date: data.to === 'Present' ? null : data.to,
+        is_currently_working: data.to === 'Present',
+        responsibility: data.responsibilities,
+      };
+
       const method = data.id ? 'PUT' : 'POST';
-      const payload = { ...data, applicant_id: Number(applicantId) };
+      const url = `/api/applicant/experiences/${applicantId}`;
 
       const res = await fetch(url, {
         method,
@@ -81,14 +116,17 @@ const WorkExperience: React.FC = () => {
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error('Failed to save experience');
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text);
+      }
 
       await fetchWorkExperiences();
       setShowModal(false);
       setEditingExperience(null);
     } catch (err) {
-      console.error(err);
-      alert('Failed to save experience');
+      console.error('Save failed:', err);
+      alert('Failed to save experience: ' + (err as Error).message);
     }
   };
 
