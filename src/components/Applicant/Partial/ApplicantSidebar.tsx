@@ -178,20 +178,30 @@ const ApplicantSidebar: React.FC = () => {
             </div>
           </Accordion.Body>
         </Accordion.Item>
+<Accordion.Item eventKey="2">
+  <Accordion.Header>
+    <i className="bi bi-file-earmark-text me-2" style={{ color: '#808080' }}></i> Build My CV
+  </Accordion.Header>
+  <Accordion.Body>
+    <ul className="list-unstyled mb-0">
+      <li className="pb-2">
+        <Link href="/applicant/cv-template/cv" className="text-decoration-none">
+          <i className="bi bi-card-checklist me-2"></i>
+          Select CV Template
+        </Link>
+      </li>
+      <li className="pb-2">
+        <Link href="/applicant/view-cv" className="text-decoration-none">
+          <i className="bi bi-eye me-2"></i>
+          View My CV
+        </Link>
+      </li>
+     
+     
+    </ul>
+  </Accordion.Body>
+</Accordion.Item>
 
-        <Accordion.Item eventKey="2">
-          <Accordion.Header>
-            <i className="bi bi-file-earmark-text me-2" style={{ color: '#808080' }}></i> Build My CV
-          </Accordion.Header>
-          <Accordion.Body>
-            <div className="pb-1">
-              <Link href="/applicant/build-cv">Select CV Template</Link>
-            </div>
-            <div className="pb-1">
-              <Link href="/applicant/view-cv">My CV</Link>
-            </div>
-          </Accordion.Body>
-        </Accordion.Item>
 
         <Accordion.Item eventKey="3">
           <Accordion.Header>
