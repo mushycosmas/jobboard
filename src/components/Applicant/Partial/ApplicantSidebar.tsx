@@ -4,56 +4,54 @@ import React, { useState, useEffect, ChangeEvent } from 'react';
 import { Accordion, Card, Button, Modal } from 'react-bootstrap';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 
 const ApplicantSidebar: React.FC = () => {
-  const [jobCounts] = useState({ applied: 5, saved: 3 });
-  const [showModal, setShowModal] = useState(false);
-  const [newLogo, setNewLogo] = useState<File | null>(null);
-  const [logo, setLogo] = useState<string>('https://via.placeholder.com/100');
+  const { data: session } = useSession();
+  const applicantId = session?.user?.applicantId?.toString() || null;
+  const applicantFirstname = session?.user?.applicantFirstname ?? '';
+  const applicantLastname = session?.user?.applicantLastname ?? '';
 
-  const applicantId = typeof window !== 'undefined' ? localStorage.getItem('applicantId') : null;
-  const applicantFirstname = typeof window !== 'undefined' ? localStorage.getItem('applicantFirstname') : '';
-  const applicantLastname = typeof window !== 'undefined' ? localStorage.getItem('applicantLastname') : '';
+  const [logo, setLogo] = useState<string>('https://via.placeholder.com/100');
+  const [newLogo, setNewLogo] = useState<File | null>(null);
+  const [showModal, setShowModal] = useState(false);
 
   const pathname = usePathname();
   const [activeKey, setActiveKey] = useState<string | null>(null);
 
-  // Handle logo file selection
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) setNewLogo(file);
+  // Accordion toggle
+  const handleAccordionSelect = (key: string | null) => {
+    if (!key) return;
+    setActiveKey(prev => (prev === key ? null : key));
   };
 
-  // Fetch applicant logo from API
-  const fetchApplicantLogo = async () => {
+  // Load current logo
+  const fetchLogo = async () => {
     if (!applicantId) return;
     try {
-      const response = await fetch(`http://localhost:4000/api/applicant/logo/${applicantId}`);
-      const data = await response.json();
-      if (data.logo) {
-        setLogo(data.logo);
-        localStorage.setItem('logo', data.logo);
-      } else {
-        setLogo('https://via.placeholder.com/100');
-      }
-    } catch (error) {
-      console.error('Error fetching applicant logo:', error);
+      const res = await fetch(`/api/applicant/logo/${applicantId}`);
+      const data = await res.json();
+      if (data.logo) setLogo(data.logo);
+      else setLogo('https://via.placeholder.com/100');
+    } catch (err) {
+      console.error('Error fetching logo:', err);
       setLogo('https://via.placeholder.com/100');
     }
   };
 
   useEffect(() => {
-    const storedLogo = localStorage.getItem('logo');
-    if (storedLogo) {
-      setLogo(storedLogo);
-    } else {
-      fetchApplicantLogo();
-    }
-  }, [pathname, applicantId]);
+    fetchLogo();
+  }, [applicantId]);
+
+  // Handle file selection
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) setNewLogo(file);
+  };
 
   // Upload new logo
-  const handleLogoUpload = async () => {
-    if (!newLogo) {
+  const uploadLogo = async () => {
+    if (!newLogo || !applicantId) {
       alert('Please select an image to upload');
       return;
     }
@@ -62,42 +60,30 @@ const ApplicantSidebar: React.FC = () => {
     formData.append('logo', newLogo);
 
     try {
-      const response = await fetch(`http://localhost:4000/api/applicant/upload-logo/${applicantId}`, {
+      const res = await fetch(`/api/applicant/upload-logo/${applicantId}`, {
         method: 'POST',
         body: formData,
       });
-      const data = await response.json();
+      const data = await res.json();
       if (data.success) {
         setLogo(data.logoPath);
-        localStorage.setItem('logo', data.logoPath);
         setShowModal(false);
+        setNewLogo(null);
       } else {
         alert('Failed to upload logo');
       }
-    } catch (error) {
-      console.error('Error uploading logo:', error);
+    } catch (err) {
+      console.error('Error uploading logo:', err);
     }
   };
 
-  // Accordion toggle: click again to close
-  const handleAccordionSelect = (selectedKey: string | null) => {
-    if (!selectedKey) return;
-    setActiveKey(prevKey => (prevKey === selectedKey ? null : selectedKey));
-  };
-
-  // Auto-expand based on current pathname
+  // Auto-expand accordion based on pathname
   useEffect(() => {
-    if (pathname === '/applicant/dashboard') {
-      setActiveKey('0');
-    } else if (pathname?.includes('/applicant/profile/')) {
-      setActiveKey('1');
-    } else if (pathname?.includes('/applicant/cv-template/')) {
-      setActiveKey('2');
-    } else if (pathname?.includes('/applicant/job/')) {
-      setActiveKey('3');
-    } else {
-      setActiveKey(null);
-    }
+    if (pathname === '/applicant/dashboard') setActiveKey('0');
+    else if (pathname?.includes('/applicant/profile/')) setActiveKey('1');
+    else if (pathname?.includes('/applicant/cv-template/')) setActiveKey('2');
+    else if (pathname?.includes('/applicant/job/')) setActiveKey('3');
+    else setActiveKey(null);
   }, [pathname]);
 
   return (
@@ -106,7 +92,7 @@ const ApplicantSidebar: React.FC = () => {
       <Card style={{ marginBottom: '0.1rem' }}>
         <Card.Body className="text-center d-flex flex-column align-items-center">
           <img
-            src={logo ? `http://localhost:4000${logo}` : 'https://via.placeholder.com/100'}
+            src={logo}
             alt="Logo"
             style={{ width: '100px', borderRadius: '0.5rem' }}
           />
@@ -138,7 +124,7 @@ const ApplicantSidebar: React.FC = () => {
           <Button variant="secondary" onClick={() => setShowModal(false)}>
             Close
           </Button>
-          <Button variant="primary" onClick={handleLogoUpload}>
+          <Button variant="primary" onClick={uploadLogo}>
             Save Changes
           </Button>
         </Modal.Footer>
@@ -146,59 +132,49 @@ const ApplicantSidebar: React.FC = () => {
 
       {/* Sidebar Accordion */}
       <Accordion activeKey={activeKey} onSelect={handleAccordionSelect}>
-        <Accordion.Item eventKey="0" className="mt-2">
-          <Accordion.Header>
-            <i className="bi bi-speedometer2 me-2"></i> Dashboard
-          </Accordion.Header>
+        <Accordion.Item eventKey="0">
+          <Accordion.Header>Dashboard</Accordion.Header>
           <Accordion.Body>
-            <Link
-              href="/applicant/dashboard"
-              className="accordion-button2 fw-bold drop-padd card-dashboard2"
-            >
-              <i className="bi bi-speedometer2 me-2"></i> Dashboard
-            </Link>
+            <Link href="/applicant/dashboard">Dashboard</Link>
           </Accordion.Body>
         </Accordion.Item>
 
         <Accordion.Item eventKey="1">
-          <Accordion.Header>
-            <i className="bi bi-person-bounding-box me-2" style={{ color: '#808080' }}></i> My Profile
-          </Accordion.Header>
+          <Accordion.Header>My Profile</Accordion.Header>
           <Accordion.Body>
-            <div className="pb-1"><Link href="/applicant/profile/personal-details">Personal Details</Link></div>
-            <div className="pb-1"><Link href="/applicant/profile/academic-qualification">Academic Qualifications</Link></div>
-            <div className="pb-1"><Link href="/applicant/profile/professional-qualification">Professional Qualifications</Link></div>
-            <div className="pb-1"><Link href="/applicant/profile/language-proficiency">Language Proficiency</Link></div>
-            <div className="pb-1"><Link href="/applicant/profile/workExperience">Work Experience</Link></div>
-            <div className="pb-1"><Link href="/applicant/profile/skills">Skills</Link></div>
-            <div className="pb-1"><Link href="/applicant/profile/applicant-referees">Referees</Link></div>
-            <div className="pb-1"><Link href="/applicant/profile/social-media">Social Media</Link></div>
-            <div className="pb-1"><Link href="/applicant/profile/change-password">Change Password</Link></div>
+            <Link href="/applicant/profile/personal-details">Personal Details</Link>
+            <br />
+            <Link href="/applicant/profile/academic-qualification">Academic Qualifications</Link>
+            <br />
+            <Link href="/applicant/profile/professional-qualification">Professional Qualifications</Link>
+            <br />
+            <Link href="/applicant/profile/language-proficiency">Language Proficiency</Link>
+            <br />
+            <Link href="/applicant/profile/workExperience">Work Experience</Link>
+            <br />
+            <Link href="/applicant/profile/skills">Skills</Link>
+            <br />
+            <Link href="/applicant/profile/applicant-referees">Referees</Link>
+            <br />
+            <Link href="/applicant/profile/social-media">Social Media</Link>
+            <br />
+            <Link href="/applicant/profile/change-password">Change Password</Link>
           </Accordion.Body>
         </Accordion.Item>
 
         <Accordion.Item eventKey="2">
-          <Accordion.Header>
-            <i className="bi bi-file-earmark-text me-2" style={{ color: '#808080' }}></i> Build My CV
-          </Accordion.Header>
+          <Accordion.Header>Build My CV</Accordion.Header>
           <Accordion.Body>
-            <ul className="list-unstyled mb-0">
-              <li className="pb-2">
-                <Link href="/applicant/cv-template/cv" className="text-decoration-none">
-                  <i className="bi bi-card-checklist me-2"></i> Select CV Template
-                </Link>
-              </li>
-            </ul>
+            <Link href="/applicant/cv-template/cv">Select CV Template</Link>
           </Accordion.Body>
         </Accordion.Item>
 
         <Accordion.Item eventKey="3">
-          <Accordion.Header>
-            <i className="bi bi-briefcase-fill me-2" style={{ color: '#808080' }}></i> My Applications
-          </Accordion.Header>
+          <Accordion.Header>My Applications</Accordion.Header>
           <Accordion.Body>
-            <div className="pb-1"><Link href="/applicant/job/applications">Applied Jobs</Link></div>
-            <div className="pb-1"><Link href="/applicant/job/saved-jobs">Saved Jobs</Link></div>
+            <Link href="/applicant/job/applications">Applied Jobs</Link>
+            <br />
+            <Link href="/applicant/job/saved-jobs">Saved Jobs</Link>
           </Accordion.Body>
         </Accordion.Item>
       </Accordion>
