@@ -209,10 +209,10 @@ const ApplicantSidebar: React.FC = () => {
           </Accordion.Header>
           <Accordion.Body>
             <div className="pb-1">
-              <Link href="/applicant/applied-jobs">Applied Jobs</Link>
+              <Link href="/applicant/job/applications">Applied Jobs</Link>
             </div>
             <div className="pb-1">
-              <Link href="/applicant/saved-jobs">Saved Jobs</Link>
+              <Link href="/applicant/job/saved-jobs">Saved Jobs</Link>
             </div>
           </Accordion.Body>
         </Accordion.Item>
