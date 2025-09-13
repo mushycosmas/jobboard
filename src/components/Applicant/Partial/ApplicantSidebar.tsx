@@ -15,24 +15,22 @@ const ApplicantSidebar: React.FC = () => {
   const [logo, setLogo] = useState<string>('https://via.placeholder.com/100');
   const [newLogo, setNewLogo] = useState<File | null>(null);
   const [showModal, setShowModal] = useState(false);
-
   const pathname = usePathname();
   const [activeKey, setActiveKey] = useState<string | null>(null);
 
   // Accordion toggle
   const handleAccordionSelect = (key: string | null) => {
-    if (!key) return;
     setActiveKey(prev => (prev === key ? null : key));
   };
 
-  // Load current logo
+  // Fetch current logo
   const fetchLogo = async () => {
     if (!applicantId) return;
     try {
       const res = await fetch(`/api/applicant/logo/${applicantId}`);
+      if (!res.ok) throw new Error('Failed to fetch logo');
       const data = await res.json();
-      if (data.logo) setLogo(data.logo);
-      else setLogo('https://via.placeholder.com/100');
+      setLogo(data.logo || 'https://via.placeholder.com/100');
     } catch (err) {
       console.error('Error fetching logo:', err);
       setLogo('https://via.placeholder.com/100');
@@ -65,7 +63,7 @@ const ApplicantSidebar: React.FC = () => {
         body: formData,
       });
       const data = await res.json();
-      if (data.success) {
+      if (data.success && data.logoPath) {
         setLogo(data.logoPath);
         setShowModal(false);
         setNewLogo(null);
@@ -97,14 +95,14 @@ const ApplicantSidebar: React.FC = () => {
             style={{ width: '100px', borderRadius: '0.5rem' }}
           />
           <div className="mt-2">
-            <a
-              href="#"
-              className="small"
+            <Button
+              variant="link"
+              className="p-0 small"
               style={{ color: '#0a66c2' }}
               onClick={() => setShowModal(true)}
             >
               Edit Logo
-            </a>
+            </Button>
           </div>
           <div className="mt-3 fw-bold text-capitalize mb-3">
             Welcome, {applicantLastname} {applicantFirstname}
