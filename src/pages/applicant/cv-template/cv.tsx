@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useRef, useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import ApplicantLayout from "@/components/Applicant/Partial/ApplicantLayout";
 import Button from "react-bootstrap/Button";
 
@@ -12,50 +13,51 @@ import CVTemplate4 from "@/components/Applicant/ApplicantCV/CVTemplates/CVTempla
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
-const staticApplicantData = {
-  profile: {
-    fullName: "John Doe",
-    email: "john@example.com",
-    phone: "+255 712 345 678",
-    address: "Dar es Salaam, Tanzania",
-    summary: "Experienced software engineer with 5+ years in full-stack development.",
-  },
-  educationalQualifications: [
-    { degree: "BSc Computer Science", institution: "University of Dar es Salaam", year: "2018" },
-  ],
-  professionalQualifications: [
-    { title: "AWS Certified Solutions Architect", year: "2021" },
-  ],
-  experiences: [
-    { company: "Tech Solutions Ltd", role: "Software Engineer", duration: "2018-2021" },
-    { company: "Misantechnology", role: "Senior Developer", duration: "2021-Present" },
-  ],
-  languages: ["English", "Swahili"],
-  skills: ["ReactJS", "Node.js", "Laravel", "AWS"],
-  referees: [
-    { name: "Jane Smith", position: "Manager", contact: "+255 789 123 456" },
-  ],
-  socialMediaLinks: [
-    { platform: "LinkedIn", url: "https://linkedin.com/in/johndoe" },
-    { platform: "GitHub", url: "https://github.com/johndoe" },
-  ],
-};
+interface CVData {
+  profile: any;
+  education: any[];
+  experiences: any[];
+  languages: any[];
+  professionalQualifications: any[];
+  skills: any[];
+  referees: any[];
+  socialMediaLinks: any[];
+}
 
 const CVPage: React.FC = () => {
-  const templates = [
-    { id: "Template 1", component: <CVTemplate1 data={staticApplicantData} /> },
-    { id: "Template 2", component: <CVTemplate2 data={staticApplicantData} /> },
-    { id: "Template 3", component: <CVTemplate3 data={staticApplicantData} /> },
-    { id: "Template 4", component: <CVTemplate4 data={staticApplicantData} /> },
-  ];
-
+  const { data: session } = useSession();
+  const [cvData, setCvData] = useState<CVData | null>(null);
   const hiddenCVRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  // Fetch applicant CV using session.user.id
+  useEffect(() => {
+    if (!session?.user?.applicantId) return;
+
+    const fetchCVData = async () => {
+      try {
+        const res = await fetch(`/api/applicant/profile/${session.user.applicantId}`);
+        if (!res.ok) throw new Error("Failed to fetch CV data");
+        const data = await res.json();
+        setCvData(data);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    fetchCVData();
+  }, [session?.user?.id]);
+
+  const templates = [
+    { id: "Template 1", component: <CVTemplate1 data={cvData} /> },
+    { id: "Template 2", component: <CVTemplate2 data={cvData} /> },
+    { id: "Template 3", component: <CVTemplate3 data={cvData} /> },
+    { id: "Template 4", component: <CVTemplate4 data={cvData} /> },
+  ];
 
   const downloadPDF = async (templateId: string) => {
     const element = hiddenCVRefs.current[templateId];
     if (!element) return;
 
-    // Render full CV (no height limit)
     element.style.height = "auto";
     element.style.overflow = "visible";
 
@@ -69,6 +71,9 @@ const CVPage: React.FC = () => {
     pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
     pdf.save(`${templateId}.pdf`);
   };
+
+  if (!session) return <p className="text-center mt-4">Please login to view your CV</p>;
+  if (!cvData) return <p className="text-center mt-4">Loading CV data...</p>;
 
   return (
     <ApplicantLayout>

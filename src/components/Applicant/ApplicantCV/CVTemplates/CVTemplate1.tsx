@@ -16,15 +16,19 @@ interface CVTemplateProps {
 
 const CVTemplate1: React.FC<CVTemplateProps> = ({ data }) => {
   return (
-    <div className="cv-template border p-4" style={{ maxWidth: 800, margin: "0 auto", fontFamily: "Arial" }}>
-      <PersonalProfile profile={data.profile} />
-      <EducationSection educationalQualifications={data.educationalQualifications} />
-      <ProfessionalQualification professionalQualifications={data.professionalQualifications} />
-      <ExperienceSection experiences={data.experiences} />
-      <LanguagesSection languages={data.languages} />
-      <SkillsSection skills={data.skills} />
-      <RefereesSection referees={data.referees} />
-      <SocialMediaSection socialMediaLinks={data.socialMediaLinks} />
+    <div
+      className="cv-template border p-4"
+      style={{ maxWidth: 800, margin: "0 auto", fontFamily: "Arial" }}
+    >
+      {/* Provide fallback empty objects/arrays for safety */}
+      <PersonalProfile profile={data?.profile ?? {}} />
+      <EducationSection educationalQualifications={data?.education ?? []} />
+      <ProfessionalQualification professionalQualifications={data?.professionalQualifications ?? []} />
+      <ExperienceSection experiences={data?.experiences ?? []} />
+      <LanguagesSection languages={data?.languages ?? []} />
+      <SkillsSection skills={data?.skills ?? []} />
+      <RefereesSection referees={data?.referees ?? []} />
+      <SocialMediaSection socialMediaLinks={data?.socialMediaLinks ?? []} />
     </div>
   );
 };

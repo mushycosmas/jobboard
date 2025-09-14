@@ -4,25 +4,37 @@ import React from "react";
 import { Card, ListGroup, Badge } from "react-bootstrap";
 
 interface CVTemplate4Props {
-  data: any; // Replace with your typed interface if needed
+  data: any; // You can replace with a typed interface
 }
 
 const CVTemplate4: React.FC<CVTemplate4Props> = ({ data }) => {
-  const { profile, educationalQualifications, professionalQualifications, experiences, languages, skills, referees, socialMediaLinks } = data;
+  const {
+    profile = {},
+    educationalQualifications = [],
+    professionalQualifications = [],
+    experiences = [],
+    languages = [],
+    skills = [],
+    referees = [],
+    socialMediaLinks = [],
+  } = data || {};
 
   return (
-    <div className="cv-template-4 border p-4" style={{ maxWidth: "900px", margin: "0 auto", fontFamily: "Arial, sans-serif" }}>
+    <div
+      className="cv-template-4 border p-4"
+      style={{ maxWidth: "900px", margin: "0 auto", fontFamily: "Arial, sans-serif" }}
+    >
       {/* Header */}
       <div className="text-center mb-4">
-        <h1 style={{ fontSize: "28px" }}>{profile.fullName}</h1>
-        <p className="text-muted mb-1">{profile.email} | {profile.phone}</p>
-        <p className="text-muted mb-1">{profile.address}</p>
+        <h1 style={{ fontSize: "28px" }}>{profile.fullName ?? "No Name"}</h1>
+        <p className="text-muted mb-1">{profile.email ?? "N/A"} | {profile.phone ?? "N/A"}</p>
+        <p className="text-muted mb-1">{profile.address ?? "N/A"}</p>
       </div>
 
       {/* Summary */}
       <div className="mb-4">
         <h5>Professional Summary</h5>
-        <p>{profile.summary}</p>
+        <p>{profile.summary ?? "No summary provided"}</p>
       </div>
 
       {/* Two Column Layout */}
@@ -33,11 +45,15 @@ const CVTemplate4: React.FC<CVTemplate4Props> = ({ data }) => {
           <Card className="mb-3 shadow-sm">
             <Card.Header className="bg-primary text-white">Education</Card.Header>
             <ListGroup variant="flush">
-              {educationalQualifications.map((edu: any, idx: number) => (
-                <ListGroup.Item key={idx}>
-                  <strong>{edu.degree}</strong> - {edu.institution} ({edu.year})
-                </ListGroup.Item>
-              ))}
+              {educationalQualifications.length ? (
+                educationalQualifications.map((edu: any, idx: number) => (
+                  <ListGroup.Item key={idx}>
+                    <strong>{edu.degree ?? "N/A"}</strong> - {edu.institution ?? "N/A"} ({edu.started ?? "N/A"} - {edu.ended ?? "N/A"})
+                  </ListGroup.Item>
+                ))
+              ) : (
+                <ListGroup.Item>No education data</ListGroup.Item>
+              )}
             </ListGroup>
           </Card>
 
@@ -45,9 +61,15 @@ const CVTemplate4: React.FC<CVTemplate4Props> = ({ data }) => {
           <Card className="mb-3 shadow-sm">
             <Card.Header className="bg-secondary text-white">Professional Qualifications</Card.Header>
             <ListGroup variant="flush">
-              {professionalQualifications.map((pq: any, idx: number) => (
-                <ListGroup.Item key={idx}>{pq.title} ({pq.year})</ListGroup.Item>
-              ))}
+              {professionalQualifications.length ? (
+                professionalQualifications.map((pq: any, idx: number) => (
+                  <ListGroup.Item key={idx}>
+                    {pq.course ?? pq.title ?? "N/A"} at {pq.institution ?? "N/A"} ({pq.started ?? "N/A"} - {pq.ended ?? "N/A"})
+                  </ListGroup.Item>
+                ))
+              ) : (
+                <ListGroup.Item>No professional qualifications</ListGroup.Item>
+              )}
             </ListGroup>
           </Card>
 
@@ -55,9 +77,11 @@ const CVTemplate4: React.FC<CVTemplate4Props> = ({ data }) => {
           <Card className="mb-3 shadow-sm">
             <Card.Header className="bg-info text-white">Languages</Card.Header>
             <ListGroup variant="flush">
-              {languages.map((lang: string, idx: number) => (
-                <ListGroup.Item key={idx}>{lang}</ListGroup.Item>
-              ))}
+              {languages.length ? (
+                languages.map((lang: string, idx: number) => <ListGroup.Item key={idx}>{lang}</ListGroup.Item>)
+              ) : (
+                <ListGroup.Item>No languages listed</ListGroup.Item>
+              )}
             </ListGroup>
           </Card>
         </div>
@@ -68,11 +92,15 @@ const CVTemplate4: React.FC<CVTemplate4Props> = ({ data }) => {
           <Card className="mb-3 shadow-sm">
             <Card.Header className="bg-success text-white">Work Experience</Card.Header>
             <ListGroup variant="flush">
-              {experiences.map((exp: any, idx: number) => (
-                <ListGroup.Item key={idx}>
-                  <strong>{exp.role}</strong> - {exp.company} ({exp.duration})
-                </ListGroup.Item>
-              ))}
+              {experiences.length ? (
+                experiences.map((exp: any, idx: number) => (
+                  <ListGroup.Item key={idx}>
+                    <strong>{exp.position ?? exp.role ?? "N/A"}</strong> - {exp.institution ?? exp.company ?? "N/A"} ({exp.from ?? "N/A"} - {exp.to ?? (exp.is_currently_working ? "Present" : "N/A")})
+                  </ListGroup.Item>
+                ))
+              ) : (
+                <ListGroup.Item>No experience data</ListGroup.Item>
+              )}
             </ListGroup>
           </Card>
 
@@ -80,9 +108,9 @@ const CVTemplate4: React.FC<CVTemplate4Props> = ({ data }) => {
           <Card className="mb-3 shadow-sm">
             <Card.Header className="bg-warning text-white">Skills</Card.Header>
             <Card.Body>
-              {skills.map((skill: string, idx: number) => (
+              {skills.length ? skills.map((skill: string, idx: number) => (
                 <Badge key={idx} bg="dark" className="me-1 mb-1">{skill}</Badge>
-              ))}
+              )) : <p>No skills listed</p>}
             </Card.Body>
           </Card>
 
@@ -90,11 +118,9 @@ const CVTemplate4: React.FC<CVTemplate4Props> = ({ data }) => {
           <Card className="mb-3 shadow-sm">
             <Card.Header className="bg-danger text-white">Referees</Card.Header>
             <ListGroup variant="flush">
-              {referees.map((ref: any, idx: number) => (
-                <ListGroup.Item key={idx}>
-                  {ref.name} - {ref.position} ({ref.contact})
-                </ListGroup.Item>
-              ))}
+              {referees.length ? referees.map((ref: any, idx: number) => (
+                <ListGroup.Item key={idx}>{ref.name ?? "N/A"} - {ref.position ?? "N/A"} ({ref.contact ?? "N/A"})</ListGroup.Item>
+              )) : <ListGroup.Item>No referees listed</ListGroup.Item>}
             </ListGroup>
           </Card>
 
@@ -102,9 +128,9 @@ const CVTemplate4: React.FC<CVTemplate4Props> = ({ data }) => {
           <Card className="mb-3 shadow-sm">
             <Card.Header className="bg-dark text-white">Social Media</Card.Header>
             <Card.Body>
-              {socialMediaLinks.map((s: any, idx: number) => (
-                <p key={idx}><a href={s.url} target="_blank" rel="noreferrer">{s.platform}</a></p>
-              ))}
+              {socialMediaLinks.length ? socialMediaLinks.map((s: any, idx: number) => (
+                <p key={idx}><a href={s.url ?? "#"} target="_blank" rel="noreferrer">{s.platform ?? "N/A"}</a></p>
+              )) : <p>No social media links</p>}
             </Card.Body>
           </Card>
         </div>
