@@ -1,18 +1,14 @@
+"use client";
+
 import React, { useEffect, useState } from "react";
 import {
   Container,
   Card,
   Table,
-  Button,
   Row,
   Col
 } from "react-bootstrap";
-import {
-  FaBriefcase,
-  FaUsers,
-  FaCheckCircle,
-  FaEye
-} from "react-icons/fa";
+import { FaBriefcase, FaUsers, FaCheckCircle, FaEye } from "react-icons/fa";
 import {
   BarChart,
   Bar,
@@ -23,10 +19,10 @@ import {
   ResponsiveContainer,
   Legend
 } from "recharts";
-import { getDashboardStats } from "../../../api/api";
+import { useSession } from "next-auth/react";
 
 const EmployerHome = () => {
-  const employerId = localStorage.getItem("employerId");
+  const { data: session, status } = useSession();
   const [stats, setStats] = useState({
     totalJobs: 0,
     activeJobs: 0,
@@ -38,9 +34,13 @@ const EmployerHome = () => {
   });
 
   useEffect(() => {
+    if (status !== "authenticated" || !session?.user?.employerId) return;
+
     const fetchStats = async () => {
       try {
-        const data = await getDashboardStats(employerId);
+        const res = await fetch(`/api/job/employer/${session.user.employerId}`);
+        if (!res.ok) throw new Error("Failed to fetch dashboard stats");
+        const data = await res.json();
         setStats({
           totalJobs: data.totalJobs || 0,
           activeJobs: data.activeJobs || 0,
@@ -56,33 +56,13 @@ const EmployerHome = () => {
     };
 
     fetchStats();
-  }, [employerId]);
+  }, [session, status]);
 
   const dashboardCards = [
-    {
-      label: "Jobs",
-      value: stats.totalJobs,
-      icon: <FaBriefcase className="dashboard-icon1" />,
-      color: "indigo"
-    },
-    {
-      label: "Applicants",
-      value: stats.totalApplicants,
-      icon: <FaUsers className="dashboard-icon2" />,
-      color: "green"
-    },
-    {
-      label: "Selected",
-      value: stats.selectedApplicants,
-      icon: <FaCheckCircle className="dashboard-icon3" />,
-      color: "blue"
-    },
-    {
-      label: "Total Views",
-      value: stats.totalViews,
-      icon: <FaEye className="dashboard-icon4" />,
-      color: "red"
-    }
+    { label: "Jobs", value: stats.totalJobs, icon: <FaBriefcase />, color: "indigo" },
+    { label: "Applicants", value: stats.totalApplicants, icon: <FaUsers />, color: "green" },
+    { label: "Selected", value: stats.selectedApplicants, icon: <FaCheckCircle />, color: "blue" },
+    { label: "Total Views", value: stats.totalViews, icon: <FaEye />, color: "red" }
   ];
 
   const chartData = [
@@ -92,41 +72,35 @@ const EmployerHome = () => {
     { name: "Selected", value: stats.selectedApplicants }
   ];
 
+  if (status === "loading") return <div>Loading...</div>;
+  if (status !== "authenticated") return <div>Please log in to view the dashboard</div>;
+
   return (
     <Container>
       <Row>
-        {/* Main Dashboard Section */}
         <Col md={8}>
           <Row className="mb-3">
-            {dashboardCards.map((card, index) => (
-              <Col xl={6} md={6} className="mb-2" key={index}>
+            {dashboardCards.map((card, idx) => (
+              <Col xl={6} md={6} key={idx} className="mb-2">
                 <Card className="border h-100">
                   <Card.Body className="d-flex align-items-center">
                     <div className={`dot me-3 bg-${card.color}`}></div>
                     <div className="flex-grow-1">
                       <div className="text-gray-500 numbers2">
-                        {card.value}
-                        <span className="text-muted ms-2" style={{ fontWeight: 400, fontSize: "16px" }}>
-                          {card.label}
-                        </span>
+                        {card.value} <span className="text-muted ms-2">{card.label}</span>
                       </div>
                     </div>
-                    <div className={`icon text-white bg-${card.color} ms-auto`}>
-                      {card.icon}
-                    </div>
+                    <div className={`icon text-white bg-${card.color} ms-auto`}>{card.icon}</div>
                   </Card.Body>
                 </Card>
               </Col>
             ))}
           </Row>
 
-          {/* Replaced Job Stats GIFs with Recharts Bar Chart */}
           <Row className="mb-3">
             <Col>
               <Card className="card-jobseeker">
-                <Card.Header className="card-header-custom px-4 pt-3">
-                  Jobs Status
-                </Card.Header>
+                <Card.Header className="card-header-custom px-4 pt-3">Jobs Status</Card.Header>
                 <Card.Body style={{ height: 300 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
@@ -144,8 +118,8 @@ const EmployerHome = () => {
           </Row>
         </Col>
 
-        {/* Sidebar Section */}
         <Col md={4}>
+          {/* Sidebar cards */}
           <Card className="card-jobseeker mb-3">
             <Card.Header className="card-header-custom px-3 pt-3">Job Posting</Card.Header>
             <Card.Body>
@@ -187,24 +161,6 @@ const EmployerHome = () => {
               </Table>
             </Card.Body>
           </Card>
-
-          <Card className="card-jobseeker mb-4">
-            <Card.Header className="card-header-custom px-3 pt-3">Subscription Plan</Card.Header>
-            <Card.Body>
-              <span className="text-muted d-block mb-2">
-                Rate Card: Post your jobs and access resumes instantly.
-              </span>
-              <a href="https://ejobsitesoftware.com/jobboard_demo/rates.php" className="text-decoration-none">
-                <i className="bi bi-cart"></i> Rate Card
-              </a>
-            </Card.Body>
-          </Card>
-
-          <div className="text-center">
-            <Button variant="outline-secondary" className="w-100">
-              <i className="bi bi-person-workspace me-2"></i> Start Applicant Tracking
-            </Button>
-          </div>
         </Col>
       </Row>
     </Container>

@@ -1,15 +1,19 @@
-'use client'; // if you use Next.js 13 app router, otherwise omit
+"use client";
 
-import React, { useState } from 'react';
-import { Container, Row, Col, Form, InputGroup, Button, Card } from 'react-bootstrap';
-import AllJobList from '../../components/AllJobList';  // Your component to list jobs
-import JobPreview from '../../components/JobPreview';  // Your component to show job details preview
+import React, { useState } from "react";
+import { Container, Row, Col, Form, InputGroup, Button, Card } from "react-bootstrap";
+import AllJobList from "../../components/AllJobList"; // Component to list jobs
+import JobPreview from "../../components/JobPreview"; // Component to show job details
 
 interface Job {
   id: number;
   title: string;
   company_name: string;
-  // add other job properties you need here
+  location?: string;
+  jobType?: string;
+  skills?: string[];
+  salary?: number;
+  // Add other job properties if needed
 }
 
 interface JobCategoriesListProps {
@@ -19,11 +23,11 @@ interface JobCategoriesListProps {
 const JobCategoriesList: React.FC<JobCategoriesListProps> = ({ jobs }) => {
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [filters, setFilters] = useState({
-    searchText: '',
-    location: '',
-    jobType: '',
-    skills: '',
-    salary: '',
+    searchText: "",
+    location: "",
+    jobType: "",
+    skills: "",
+    salary: "",
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -33,24 +37,33 @@ const JobCategoriesList: React.FC<JobCategoriesListProps> = ({ jobs }) => {
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Implement filtering logic or API call here based on filters
-    // For now just console.log
-    console.log('Filters:', filters);
+    // Optionally implement API call or advanced filtering
+    console.log("Filters:", filters);
   };
 
-  // Optionally filter jobs client-side if no API call
+  // Client-side filtering
   const filteredJobs = jobs.filter((job) => {
-    // Basic filter by search text (title/company)
     const searchLower = filters.searchText.toLowerCase();
     if (searchLower && !job.title.toLowerCase().includes(searchLower) && !job.company_name.toLowerCase().includes(searchLower)) {
       return false;
     }
-    // Add more filter logic for location, jobType, skills, salary if job object has those fields
+    if (filters.location && job.location && !job.location.toLowerCase().includes(filters.location.toLowerCase())) {
+      return false;
+    }
+    if (filters.jobType && job.jobType !== filters.jobType) {
+      return false;
+    }
+    if (filters.skills && job.skills && !job.skills.includes(filters.skills)) {
+      return false;
+    }
+    if (filters.salary && job.salary && job.salary < Number(filters.salary)) {
+      return false;
+    }
     return true;
   });
 
   return (
-    <Container style={{ marginTop: '70px', marginBottom: '0.7rem' }}>
+    <Container style={{ marginTop: "70px", marginBottom: "0.7rem" }}>
       <Row className="mb-4">
         <Col md={12}>
           <Form onSubmit={handleSearch}>
@@ -66,6 +79,7 @@ const JobCategoriesList: React.FC<JobCategoriesListProps> = ({ jobs }) => {
                   />
                 </InputGroup>
               </Col>
+
               <Col md={2}>
                 <InputGroup>
                   <Form.Control
@@ -77,8 +91,9 @@ const JobCategoriesList: React.FC<JobCategoriesListProps> = ({ jobs }) => {
                   />
                 </InputGroup>
               </Col>
+
               <Col md={2}>
-                <Form.Select name="jobType" aria-label="Job Type" value={filters.jobType} onChange={handleInputChange}>
+                <Form.Select name="jobType" value={filters.jobType} onChange={handleInputChange}>
                   <option value="">Job Type</option>
                   <option value="full-time">Full-Time</option>
                   <option value="part-time">Part-Time</option>
@@ -86,8 +101,9 @@ const JobCategoriesList: React.FC<JobCategoriesListProps> = ({ jobs }) => {
                   <option value="internship">Internship</option>
                 </Form.Select>
               </Col>
+
               <Col md={2}>
-                <Form.Select name="skills" aria-label="Skills" value={filters.skills} onChange={handleInputChange}>
+                <Form.Select name="skills" value={filters.skills} onChange={handleInputChange}>
                   <option value="">Select Skills</option>
                   <option value="javascript">JavaScript</option>
                   <option value="python">Python</option>
@@ -98,20 +114,21 @@ const JobCategoriesList: React.FC<JobCategoriesListProps> = ({ jobs }) => {
                   <option value="nodejs">Node.js</option>
                 </Form.Select>
               </Col>
+
               <Col md={2}>
                 <InputGroup>
                   <Form.Control
                     name="salary"
                     type="number"
                     placeholder="Salary"
-                    aria-label="Salary"
                     value={filters.salary}
                     onChange={handleInputChange}
                   />
                 </InputGroup>
               </Col>
+
               <Col md={2}>
-                <Button variant="primary" type="submit" className="w-100">
+                <Button type="submit" variant="primary" className="w-100">
                   Search
                 </Button>
               </Col>

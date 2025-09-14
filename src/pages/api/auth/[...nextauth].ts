@@ -10,38 +10,42 @@ export default NextAuth({
     CredentialsProvider({
       name: "Credentials",
       credentials: {
-        username: { label: "Username", type: "text", placeholder: "username" },
+        username: { label: "Username or Email", type: "text", placeholder: "username or email" },
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
         if (!credentials) throw new Error("No credentials provided.");
-
         const { username, password } = credentials;
 
-        // Find user by username (not email)
+        // Find user by email or username
         const [rows] = await db.query<RowDataPacket[]>(
-          "SELECT * FROM users WHERE email = ? LIMIT 1",
-          [username]
+          "SELECT * FROM users WHERE email = ? OR username = ? LIMIT 1",
+          [username, username]
         );
 
         const user = rows[0];
-        if (!user) throw new Error("Invalid username.");
+        if (!user) throw new Error("Invalid username or email.");
 
         const isValid = await bcrypt.compare(password, user.password);
         if (!isValid) throw new Error("Invalid password.");
 
-        // Fetch employer/applicant info if needed
-        let employerId = null;
-        let applicantId = null;
-        let employerName = null;
-        let applicantFirstname = null;
-        let applicantLastname = null;
+        // Prepare extra info for session
+        let employerId: number | null = null;
+        let employerName: string | null = null;
+        let applicantId: number | null = null;
+        let applicantFirstname: string | null = null;
+        let applicantLastname: string | null = null;
 
         if (user.userType === "employer") {
+          // Correct join with employers table
           const [employerRows] = await db.query<RowDataPacket[]>(
-            "SELECT employer_id, company_name FROM user_employer WHERE user_id = ? LIMIT 1",
+            `SELECT ue.employer_id, e.company_name
+             FROM user_employers ue
+             LEFT JOIN employers e ON ue.employer_id = e.id
+             WHERE ue.user_id = ? LIMIT 1`,
             [user.id]
           );
+
           if (employerRows.length > 0) {
             employerId = employerRows[0].employer_id;
             employerName = employerRows[0].company_name;
@@ -51,6 +55,7 @@ export default NextAuth({
             "SELECT id, first_name, last_name FROM applicants WHERE user_id = ? LIMIT 1",
             [user.id]
           );
+
           if (applicantRows.length > 0) {
             applicantId = applicantRows[0].id;
             applicantFirstname = applicantRows[0].first_name;
@@ -58,7 +63,6 @@ export default NextAuth({
           }
         }
 
-        // Return the user object with extra info
         return {
           id: user.id,
           username: user.username,
@@ -98,7 +102,7 @@ export default NextAuth({
         token.applicantLastname = user.applicantLastname ?? null;
       }
 
-      // Google sign in flow - keep existing logic for user creation
+      // Google sign-in flow
       if (account?.provider === "google" && profile?.email) {
         const email = profile.email;
 

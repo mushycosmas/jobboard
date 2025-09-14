@@ -75,7 +75,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         // Insert user
         const [userResult]: any = await connection.query(
-          `INSERT INTO users (username, email, password, user_type) VALUES (?, ?, ?, ?)`,
+          `INSERT INTO users (username, email, password, userType) VALUES (?, ?, ?, ?)`,
           [username, email, hashedPassword, userType]
         );
         const userId = userResult.insertId;
