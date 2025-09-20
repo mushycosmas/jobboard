@@ -57,7 +57,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(404).json({ message: "No applicants found" });
     }
 
-    // 🔹 Fetch education and join programmes & institutes
+    // 🔹 Fetch education
     const [educationRows] = await db.query<RowDataPacket[]>(`
       SELECT ae.*, el.education_level, p.name AS programme_name, i.name AS institution_name
       FROM applicant_educations ae
@@ -66,14 +66,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       LEFT JOIN institutions i ON ae.institution_id = i.id
     `);
 
-    // 🔹 Fetch experiences and join institutions
+    // 🔹 Fetch experiences
     const [experienceRows] = await db.query<RowDataPacket[]>(`
       SELECT ae.*, i.name AS institution_name
       FROM applicant_experiences ae
       LEFT JOIN institutions i ON ae.institution_id = i.id
     `);
 
-    // 🔹 Fetch languages with level names
+    // 🔹 Fetch languages
     const [languageRows] = await db.query<RowDataPacket[]>(`
       SELECT al.*, l.name AS language_name,
         lr.name AS read_level,
@@ -86,22 +86,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       LEFT JOIN language_speaks ls ON al.speak_id = ls.id
     `);
 
-    // 🔹 Fetch professional qualifications joined with institutes
+    // 🔹 Fetch professional qualifications
     const [professionalRows] = await db.query<RowDataPacket[]>(`
       SELECT ap.*, i.name AS institution_name
       FROM applicant_professionals ap
       LEFT JOIN institutions i ON ap.institution_id = i.id
     `);
 
-    // 🔹 Fetch skills, referees, social media, positions
+    // 🔹 Fetch skills, referees, positions
     const [skillRows] = await db.query<RowDataPacket[]>(`
       SELECT askill.*, s.skill_name
       FROM applicant_skills askill
       LEFT JOIN skills s ON askill.skill_id = s.id
     `);
     const [refereeRows] = await db.query<RowDataPacket[]>(`SELECT * FROM applicant_referees`);
-    const [socialRows] = await db.query<RowDataPacket[]>(`SELECT * FROM applicant_social_medias`);
     const [positionRows] = await db.query<RowDataPacket[]>(`SELECT * FROM positions`);
+
+    // 🔹 Fetch social media with platform name
+    const [socialRows] = await db.query<RowDataPacket[]>(`
+      SELECT asm.*, sm.name AS platform_name
+      FROM applicant_social_medias asm
+      LEFT JOIN social_medias sm ON asm.social_media_id = sm.id
+    `);
 
     // 🔹 Map data per applicant
     const candidates: CVData[] = applicants.map((profile) => {
@@ -141,7 +147,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           })),
         skills: skillRows.filter((s) => s.applicant_id === applicantId),
         referees: refereeRows.filter((r) => r.applicant_id === applicantId),
-        socialMediaLinks: socialRows.filter((s) => s.applicant_id === applicantId),
+        socialMediaLinks: socialRows
+          .filter((s) => s.applicant_id === applicantId)
+          .map((s) => ({
+            ...s,
+            platform: s.platform_name,
+          })),
         positions: positionRows,
       };
     });

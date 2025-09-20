@@ -2,7 +2,9 @@
 
 import React from "react";
 import { Button, Card, Table, Container, Spinner, Alert } from "react-bootstrap";
+import { calculateTotalExperience } from "../../utils/experience"; // adjust path
 
+// --- Applicant & Pagination Interfaces ---
 interface Applicant {
   id: number;
   first_name: string;
@@ -10,7 +12,7 @@ interface Applicant {
   email: string;
   phone_number: string;
   address: string;
-  totalExperience: string;
+  experiences?: { from_date?: string; to_date?: string }[];
   region_name: string;
   logo?: string | null;
 }
@@ -32,6 +34,11 @@ interface ApplicantListProps {
   setShowFilterModal: (show: boolean) => void;
 }
 
+// --- Helper ---
+const displayValue = (value?: string | null, fallback: string = "-") =>
+  value && value.trim() !== "" ? value : fallback;
+
+// --- Component ---
 const ApplicantList: React.FC<ApplicantListProps> = ({
   applicants,
   pagination,
@@ -47,11 +54,7 @@ const ApplicantList: React.FC<ApplicantListProps> = ({
       <Card className="shadow-sm">
         <Card.Header className="bg-primary text-white d-flex justify-content-between align-items-center">
           <h5 className="mb-0">Applicant List</h5>
-          <Button
-            variant="light"
-            size="sm"
-            onClick={() => setShowFilterModal(true)}
-          >
+          <Button variant="light" size="sm" onClick={() => setShowFilterModal(true)}>
             Filter
           </Button>
         </Card.Header>
@@ -89,29 +92,25 @@ const ApplicantList: React.FC<ApplicantListProps> = ({
                     applicants.map((applicant) => (
                       <tr
                         key={applicant.id}
-                        style={{
-                          cursor: onRowClick ? "pointer" : "default",
-                        }}
+                        style={{ cursor: onRowClick ? "pointer" : "default" }}
                         onClick={() => onRowClick?.(applicant.id)}
                       >
                         <td className="text-center">
                           <img
-                            src={applicant.logo || "/placeholder.png"} // Use default if no logo
+                            src={applicant.logo || "/placeholder.png"}
                             alt="Profile"
-                            style={{
-                              width: "50px",
-                              height: "50px",
-                              objectFit: "cover",
-                            }}
+                            style={{ width: "50px", height: "50px", objectFit: "cover" }}
                             className="rounded-circle border"
                           />
                         </td>
-                        <td>{applicant.first_name} {applicant.last_name}</td>
-                        <td>{applicant.email}</td>
-                        <td>{applicant.phone_number}</td>
-                        <td>{applicant.address}</td>
-                        <td>{applicant.totalExperience}</td>
-                        <td>{applicant.region_name}</td>
+                        <td>
+                          {displayValue(applicant.first_name) + " " + displayValue(applicant.last_name)}
+                        </td>
+                        <td>{displayValue(applicant.email)}</td>
+                        <td>{displayValue(applicant.phone_number)}</td>
+                        <td>{displayValue(applicant.address)}</td>
+                        <td>{calculateTotalExperience(applicant.experiences)}</td>
+                        <td>{displayValue(applicant.region_name)}</td>
                       </tr>
                     ))
                   ) : (
