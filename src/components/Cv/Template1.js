@@ -1,7 +1,6 @@
 import React, { useRef } from 'react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import styles from '../../../src/styles/cv/template1.module.css'; // Ensure this path is correct
 
 const Template1 = ({ 
   profile, 

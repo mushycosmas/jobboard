@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form } from 'react-bootstrap';
-import styles from './../../styles/cv/template1.module.css';
 import { getRecruitmentstage, moveApplicantToStage } from '../../api/api';
 import InterviewDetailsForm from '../InterviewStage/InterviewDetails';
 import AssessmentDetailsForm from '../InterviewStage/AssessmentDetailsForm';

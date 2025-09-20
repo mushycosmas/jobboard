@@ -1,5 +1,4 @@
 import React from 'react';
-import styles from '../../../src/styles/cv/template1.module.css';  // Import the scoped CSS Module
 
 const CvTemplate1 = () => {
   return (
