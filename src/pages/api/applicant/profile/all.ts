@@ -57,13 +57,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(404).json({ message: "No applicants found" });
     }
 
-    // 🔹 Fetch education
+    // 🔹 Fetch education and join programmes & institutes
     const [educationRows] = await db.query<RowDataPacket[]>(`
-      SELECT ae.*, el.education_level, i.name AS institution_name, ind.industry_name AS industry_name
+      SELECT ae.*, el.education_level, p.name AS programme_name, i.name AS institution_name
       FROM applicant_educations ae
       LEFT JOIN education_levels el ON ae.education_level_id = el.id
+      LEFT JOIN programmes p ON ae.programme_id = p.id
       LEFT JOIN institutions i ON ae.institution_id = i.id
-      LEFT JOIN industries ind ON ae.category_id = ind.id
     `);
 
     // 🔹 Fetch experiences and join institutions
@@ -86,10 +86,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       LEFT JOIN language_speaks ls ON al.speak_id = ls.id
     `);
 
-    // 🔹 Fetch other related tables
-    const [professionalRows] = await db.query<RowDataPacket[]>(`SELECT * FROM applicant_professionals`);
+    // 🔹 Fetch professional qualifications joined with institutes
+    const [professionalRows] = await db.query<RowDataPacket[]>(`
+      SELECT ap.*, i.name AS institution_name
+      FROM applicant_professionals ap
+      LEFT JOIN institutions i ON ap.institution_id = i.id
+    `);
+
+    // 🔹 Fetch skills, referees, social media, positions
     const [skillRows] = await db.query<RowDataPacket[]>(`
-      SELECT askill.*, s.skill_name AS skill_name
+      SELECT askill.*, s.skill_name
       FROM applicant_skills askill
       LEFT JOIN skills s ON askill.skill_id = s.id
     `);

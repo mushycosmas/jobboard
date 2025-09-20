@@ -6,13 +6,21 @@ import CreatableSelect from "react-select/creatable";
 import Select from "react-select";
 
 interface ApplicantProfileModalProps {
-  applicantData: any; // full API object
+  applicantData: any;
   categories: { id: number; name: string }[];
   positions: { id: number; name: string }[];
   savedCollections: { id: number; name: string }[];
   employerId: string | number;
   setShowProfileModal: (show: boolean) => void;
 }
+
+// Helper functions
+const formatDate = (dateStr: string | null | undefined) => {
+  if (!dateStr) return null;
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return dateStr;
+  return date.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+};
 
 const ApplicantProfileModal: React.FC<ApplicantProfileModalProps> = ({
   applicantData,
@@ -65,25 +73,37 @@ const ApplicantProfileModal: React.FC<ApplicantProfileModalProps> = ({
     }
   };
 
-  const mappedExperiences = applicantData.experiences?.map((exp: any) => {
-    const pos = positions.find((p) => p.id === exp.position_id);
-    return {
-      ...exp,
-      position: pos?.name || "Unknown",
-      institution: exp.institution_name || "Unknown",
-      from_date: exp.from_date || "N/A",
-      to_date: exp.to_date || "Present",
-    };
-  });
+  const mappedExperiences = applicantData.experiences
+    ?.filter((exp: any) => exp.position_id || exp.institution_name)
+    .map((exp: any) => {
+      const pos = positions.find((p) => p.id === exp.position_id);
+      return {
+        ...exp,
+        position: pos?.name || null,
+        institution: exp.institution_name || null,
+        from_date: formatDate(exp.from_date),
+        to_date: formatDate(exp.to_date) === null ? "Present" : formatDate(exp.to_date),
+      };
+    });
+
+  const renderSection = (title: string, items: any[], renderItem: (item: any, idx: number) => JSX.Element) => {
+    if (!items || !items.length) return null;
+    return (
+      <section className="mt-3">
+        <h5>{title}</h5>
+        <ul style={{ paddingLeft: "1rem", lineHeight: 1.6 }}>{items.map(renderItem)}</ul>
+      </section>
+    );
+  };
 
   return (
     <>
       {/* Main Profile Modal */}
       <Modal show centered size="lg" onHide={() => setShowProfileModal(false)}>
         <Modal.Header closeButton>
-          <Modal.Title>{applicantData.profile.fullName}</Modal.Title>
+          <Modal.Title>{applicantData.profile.fullName || ""}</Modal.Title>
         </Modal.Header>
-        <Modal.Body>
+        <Modal.Body style={{ wordBreak: "break-word", lineHeight: 1.6 }}>
           <div className="d-flex">
             {/* Sidebar */}
             <div className="p-3 border-end" style={{ width: "30%" }}>
@@ -93,145 +113,138 @@ const ApplicantProfileModal: React.FC<ApplicantProfileModalProps> = ({
                   alt="Profile"
                   className="img-fluid rounded-circle mb-2"
                 />
-                <h5>{applicantData.profile.fullName}</h5>
-                <p className="text-muted">{applicantData.profile.email}</p>
-                <p>{applicantData.profile.phone}</p>
-                <p>
-                  {applicantData.profile.region_name}, {applicantData.profile.country_name}
-                </p>
-                <p>
-                  {applicantData.profile.gender} | {applicantData.profile.marital_status}
-                </p>
-              </div>
-
-              <div className="mt-3">
-                <h6>Social Media</h6>
-                {applicantData.socialMediaLinks?.length ? (
-                  applicantData.socialMediaLinks.map((link: any, idx: number) => (
-                    <p key={idx}>
-                      <a href={link.url} target="_blank" rel="noopener noreferrer">
-                        {link.platform || "Link"}
-                      </a>
-                    </p>
-                  ))
-                ) : (
-                  <p>No social media links</p>
+                {applicantData.profile.fullName && <h5 style={{ marginBottom: "0.5rem" }}>{applicantData.profile.fullName}</h5>}
+                {applicantData.profile.email && <p className="text-muted mb-1">{applicantData.profile.email}</p>}
+                {applicantData.profile.phone && <p className="mb-1">{applicantData.profile.phone}</p>}
+                {(applicantData.profile.region_name || applicantData.profile.country_name) && (
+                  <p className="mb-1">
+                    {applicantData.profile.region_name || ""} {applicantData.profile.country_name || ""}
+                  </p>
+                )}
+                {(applicantData.profile.gender || applicantData.profile.marital_status) && (
+                  <p className="mb-1">
+                    {applicantData.profile.gender || ""}{" "}
+                    {applicantData.profile.marital_status ? `| ${applicantData.profile.marital_status}` : ""}
+                  </p>
                 )}
               </div>
 
-              <div className="mt-3">
-                <h6>Referees</h6>
-                {applicantData.referees?.length ? (
-                  applicantData.referees.map((ref: any, idx: number) => (
-                    <p key={idx}>
-                      {ref.first_name} {ref.last_name} - {ref.referee_position} (
-                      {ref.institution_name || "Unknown"})
-                    </p>
-                  ))
-                ) : (
-                  <p>No referees</p>
-                )}
-              </div>
+              {applicantData.socialMediaLinks?.length > 0 && (
+                <div className="mt-3">
+                  <h6>Social Media</h6>
+                  {applicantData.socialMediaLinks.map((link: any, idx: number) =>
+                    link.url ? (
+                      <p key={idx} style={{ marginBottom: "0.3rem" }}>
+                        <a href={link.url} target="_blank" rel="noopener noreferrer">
+                          {link.platform || "Link"}
+                        </a>
+                      </p>
+                    ) : null
+                  )}
+                </div>
+              )}
+
+              {applicantData.referees?.length > 0 && (
+                <div className="mt-3">
+                  <h6>Referees</h6>
+                  {applicantData.referees.map((ref: any, idx: number) =>
+                    ref.first_name || ref.last_name ? (
+                      <p key={idx} style={{ marginBottom: "0.3rem" }}>
+                        {ref.first_name || ""} {ref.last_name || ""}{" "}
+                        {ref.referee_position ? `- ${ref.referee_position}` : ""}{" "}
+                        {ref.institution_name ? `(${ref.institution_name})` : ""}
+                      </p>
+                    ) : null
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Main Content */}
             <div className="p-3" style={{ width: "70%" }}>
-              <section>
-                <h5>About Me</h5>
-                <p>{applicantData.profile.summary || "No summary provided."}</p>
-              </section>
+              {applicantData.profile.summary && (
+                <section>
+                  <h5>About Me</h5>
+                  <p style={{ marginBottom: "0.5rem" }}>{applicantData.profile.summary}</p>
+                </section>
+              )}
 
-              <section className="mt-3">
-                <h5>Work Experience</h5>
-                {mappedExperiences?.length ? (
-                  <ul>
-                    {mappedExperiences.map((exp: any, idx: number) => (
-                      <li key={idx}>
-                        <strong>
-                          {exp.position} | {exp.institution}
-                        </strong>
-                        <p>
-                          {exp.from_date} - {exp.to_date}
-                        </p>
-                        <div dangerouslySetInnerHTML={{ __html: exp.responsibility || "" }} />
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p>No work experience available</p>
-                )}
-              </section>
+              {renderSection("Work Experience", mappedExperiences || [], (exp, idx) => (
+                <li key={idx}>
+                  {(exp.position || exp.institution) && (
+                    <strong style={{ display: "block", wordBreak: "break-word", marginBottom: "0.3rem" }}>
+                      {exp.position} {exp.institution ? `| ${exp.institution}` : ""}
+                    </strong>
+                  )}
+                  <p style={{ marginBottom: "0.3rem" }}>
+                    {exp.from_date} - {exp.to_date}
+                  </p>
+                  {exp.responsibility && (
+                    <div
+                      style={{ marginBottom: "0.5rem" }}
+                      dangerouslySetInnerHTML={{ __html: exp.responsibility }}
+                    />
+                  )}
+                </li>
+              ))}
 
-              <section className="mt-3">
-                <h5>Education</h5>
-                {applicantData.education?.length ? (
-                  <ul>
-                    {applicantData.education.map((edu: any, idx: number) => (
-                      <li key={idx}>
-                        <strong>
-                          {edu.education_level} - {edu.programme_name}
-                        </strong>
-                        <p>
-                          {edu.institution_name} | {edu.started} - {edu.ended}
-                        </p>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p>No education data available</p>
-                )}
-              </section>
+              {renderSection("Education", applicantData.education || [], (edu, idx) =>
+                edu.education_level || edu.programme_name ? (
+                  <li key={idx}>
+                    <strong style={{ display: "block", wordBreak: "break-word", marginBottom: "0.3rem" }}>
+                      {edu.education_level} {edu.programme_name ? `- ${edu.programme_name}` : ""}
+                    </strong>
+                    <p style={{ marginBottom: "0.3rem" }}>
+                      {edu.institution_name ? `${edu.institution_name} | ` : ""}
+                      {edu.started ? formatDate(edu.started) : ""} - {edu.ended ? formatDate(edu.ended) : ""}
+                    </p>
+                  </li>
+                ) : null
+              )}
 
-              <section className="mt-3">
-                <h5>Professional Qualifications</h5>
-                {applicantData.professionalQualifications?.length ? (
-                  <ul>
-                    {applicantData.professionalQualifications.map((pq: any, idx: number) => (
-                      <li key={idx}>
-                        {pq.institution_name} | {pq.started} - {pq.ended} <br />
-                        {pq.attachment && (
-                          <a href={pq.attachment} target="_blank" rel="noopener noreferrer">
-                            Attachment
-                          </a>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p>No professional qualifications</p>
-                )}
-              </section>
+              {renderSection("Professional Qualifications", applicantData.professionalQualifications || [], (pq, idx) =>
+                pq.institution_name ? (
+                  <li key={idx}>
+                    <strong style={{ display: "block", wordBreak: "break-word", marginBottom: "0.3rem" }}>
+                      {pq.institution_name}
+                    </strong>
+                    <p style={{ marginBottom: "0.3rem" }}>
+                      {pq.started ? formatDate(pq.started) : ""} - {pq.ended ? formatDate(pq.ended) : ""}
+                    </p>
+                    {pq.attachment && (
+                      <a href={pq.attachment} target="_blank" rel="noopener noreferrer">
+                        Attachment
+                      </a>
+                    )}
+                  </li>
+                ) : null
+              )}
 
-              <section className="mt-3">
-                <h5>Skills</h5>
-                {applicantData.skills?.length ? (
+              {applicantData.skills?.length > 0 && (
+                <section className="mt-3">
+                  <h5>Skills</h5>
                   <div className="d-flex flex-wrap gap-2">
-                    {applicantData.skills.map((skill: any, idx: number) => (
-                      <span key={idx} className="badge bg-primary">
-                        {skill.skill_name || "Unknown"}
-                      </span>
-                    ))}
+                    {applicantData.skills.map((skill: any, idx: number) =>
+                      skill.skill_name ? (
+                        <span key={idx} className="badge bg-primary">
+                          {skill.skill_name}
+                        </span>
+                      ) : null
+                    )}
                   </div>
-                ) : (
-                  <p>No skills data available</p>
-                )}
-              </section>
+                </section>
+              )}
 
-              <section className="mt-3">
-                <h5>Languages</h5>
-                {applicantData.languages?.length ? (
-                  <ul>
-                    {applicantData.languages.map((lang: any, idx: number) => (
-                      <li key={idx}>
-                        {lang.language_name} - Read: {lang.read} | Write: {lang.write} | Speak:{" "}
-                        {lang.speak}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p>No language data</p>
-                )}
-              </section>
+              {renderSection("Languages", applicantData.languages || [], (lang, idx) =>
+                lang.language_name ? (
+                  <li key={idx}>
+                    {lang.language_name}{" "}
+                    {lang.read ? `- Read: ${lang.read}` : ""}{" "}
+                    {lang.write ? `| Write: ${lang.write}` : ""}{" "}
+                    {lang.speak ? `| Speak: ${lang.speak}` : ""}
+                  </li>
+                ) : null
+              )}
             </div>
           </div>
         </Modal.Body>
