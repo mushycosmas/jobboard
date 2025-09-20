@@ -5,76 +5,11 @@ import { Modal, Button, Form, Spinner } from "react-bootstrap";
 import CreatableSelect from "react-select/creatable";
 import Select from "react-select";
 
-interface Profile {
-  id: number;
-  first_name: string;
-  last_name: string;
-  fullName: string;
-  email: string;
-  phone: string;
-  photo?: string | null;
-  region_name?: string;
-  country_name?: string;
-  gender?: string;
-  marital_status?: string;
-  summary?: string;
-}
-
-interface Experience {
-  id: number;
-  position: string;
-  institution: string;
-  from: string;
-  to?: string;
-  responsibilities?: string;
-}
-
-interface Education {
-  id: number;
-  education_level: string;
-  programme: string;
-  institution: string;
-  ended: string;
-}
-
-interface Skill {
-  skill_name: string;
-}
-
-interface SocialLink {
-  id: number;
-  platform: string;
-  url: string;
-}
-
-interface Collection {
-  id: number | string;
-  name: string;
-}
-
-interface Category {
-  id: number | string;
-  name: string;
-}
-
-interface Position {
-  id: number | string;
-  name: string;
-}
-
-interface ApplicantData {
-  profile: Profile;
-  experiences?: Experience[];
-  education?: Education[];
-  skills?: Skill[];
-  socialMediaLinks?: SocialLink[];
-}
-
 interface ApplicantProfileModalProps {
-  applicantData: ApplicantData;
-  categories: Category[];
-  positions: Position[];
-  savedCollections: Collection[];
+  applicantData: any; // full API object
+  categories: { id: number; name: string }[];
+  positions: { id: number; name: string }[];
+  savedCollections: { id: number; name: string }[];
   employerId: string | number;
   setShowProfileModal: (show: boolean) => void;
 }
@@ -88,16 +23,17 @@ const ApplicantProfileModal: React.FC<ApplicantProfileModalProps> = ({
   setShowProfileModal,
 }) => {
   const [showSaveModal, setShowSaveModal] = useState(false);
-  const [category, setCategory] = useState<any>(null);
-  const [position, setPosition] = useState<any>(null);
-  const [folderName, setFolderName] = useState<any>(null);
+  const [category, setCategory] = useState<{ value: any; label: string } | null>(null);
+  const [position, setPosition] = useState<{ value: any; label: string } | null>(null);
+  const [folderName, setFolderName] = useState<{ value: any; label: string } | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleSave = () => setShowSaveModal(true);
 
   const handleSubmit = async () => {
-    setLoading(true);
+    if (!category && !position && !folderName) return;
 
+    setLoading(true);
     const payload = {
       category_id: category?.value || null,
       position_id: position?.value || null,
@@ -129,15 +65,21 @@ const ApplicantProfileModal: React.FC<ApplicantProfileModalProps> = ({
     }
   };
 
+  const mappedExperiences = applicantData.experiences?.map((exp: any) => {
+    const pos = positions.find((p) => p.id === exp.position_id);
+    return {
+      ...exp,
+      position: pos?.name || "Unknown",
+      institution: exp.institution_name || "Unknown",
+      from_date: exp.from_date || "N/A",
+      to_date: exp.to_date || "Present",
+    };
+  });
+
   return (
     <>
       {/* Main Profile Modal */}
-      <Modal
-        show={true}
-        onHide={() => setShowProfileModal(false)}
-        size="lg"
-        centered
-      >
+      <Modal show centered size="lg" onHide={() => setShowProfileModal(false)}>
         <Modal.Header closeButton>
           <Modal.Title>{applicantData.profile.fullName}</Modal.Title>
         </Modal.Header>
@@ -147,7 +89,7 @@ const ApplicantProfileModal: React.FC<ApplicantProfileModalProps> = ({
             <div className="p-3 border-end" style={{ width: "30%" }}>
               <div className="text-center">
                 <img
-                  src={applicantData.profile.photo || "https://via.placeholder.com/100"}
+                  src={applicantData.profile.logo || "https://via.placeholder.com/100"}
                   alt="Profile"
                   className="img-fluid rounded-circle mb-2"
                 />
@@ -165,15 +107,29 @@ const ApplicantProfileModal: React.FC<ApplicantProfileModalProps> = ({
               <div className="mt-3">
                 <h6>Social Media</h6>
                 {applicantData.socialMediaLinks?.length ? (
-                  applicantData.socialMediaLinks.map((link: SocialLink) => (
-                    <p key={link.id}>
+                  applicantData.socialMediaLinks.map((link: any, idx: number) => (
+                    <p key={idx}>
                       <a href={link.url} target="_blank" rel="noopener noreferrer">
-                        {link.platform}
+                        {link.platform || "Link"}
                       </a>
                     </p>
                   ))
                 ) : (
                   <p>No social media links</p>
+                )}
+              </div>
+
+              <div className="mt-3">
+                <h6>Referees</h6>
+                {applicantData.referees?.length ? (
+                  applicantData.referees.map((ref: any, idx: number) => (
+                    <p key={idx}>
+                      {ref.first_name} {ref.last_name} - {ref.referee_position} (
+                      {ref.institution_name || "Unknown"})
+                    </p>
+                  ))
+                ) : (
+                  <p>No referees</p>
                 )}
               </div>
             </div>
@@ -187,13 +143,17 @@ const ApplicantProfileModal: React.FC<ApplicantProfileModalProps> = ({
 
               <section className="mt-3">
                 <h5>Work Experience</h5>
-                {applicantData.experiences?.length ? (
+                {mappedExperiences?.length ? (
                   <ul>
-                    {applicantData.experiences.map((exp: Experience) => (
-                      <li key={exp.id}>
-                        <strong>{exp.position} | {exp.institution}</strong>
-                        <p>{exp.from} - {exp.to || "Present"}</p>
-                        <div dangerouslySetInnerHTML={{ __html: exp.responsibilities || "" }} />
+                    {mappedExperiences.map((exp: any, idx: number) => (
+                      <li key={idx}>
+                        <strong>
+                          {exp.position} | {exp.institution}
+                        </strong>
+                        <p>
+                          {exp.from_date} - {exp.to_date}
+                        </p>
+                        <div dangerouslySetInnerHTML={{ __html: exp.responsibility || "" }} />
                       </li>
                     ))}
                   </ul>
@@ -206,10 +166,14 @@ const ApplicantProfileModal: React.FC<ApplicantProfileModalProps> = ({
                 <h5>Education</h5>
                 {applicantData.education?.length ? (
                   <ul>
-                    {applicantData.education.map((edu: Education) => (
-                      <li key={edu.id}>
-                        <strong>{edu.education_level} - {edu.programme}</strong>
-                        <p>{edu.institution} | {new Date(edu.ended).toLocaleDateString()}</p>
+                    {applicantData.education.map((edu: any, idx: number) => (
+                      <li key={idx}>
+                        <strong>
+                          {edu.education_level} - {edu.programme_name}
+                        </strong>
+                        <p>
+                          {edu.institution_name} | {edu.started} - {edu.ended}
+                        </p>
                       </li>
                     ))}
                   </ul>
@@ -219,33 +183,70 @@ const ApplicantProfileModal: React.FC<ApplicantProfileModalProps> = ({
               </section>
 
               <section className="mt-3">
+                <h5>Professional Qualifications</h5>
+                {applicantData.professionalQualifications?.length ? (
+                  <ul>
+                    {applicantData.professionalQualifications.map((pq: any, idx: number) => (
+                      <li key={idx}>
+                        {pq.institution_name} | {pq.started} - {pq.ended} <br />
+                        {pq.attachment && (
+                          <a href={pq.attachment} target="_blank" rel="noopener noreferrer">
+                            Attachment
+                          </a>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p>No professional qualifications</p>
+                )}
+              </section>
+
+              <section className="mt-3">
                 <h5>Skills</h5>
                 {applicantData.skills?.length ? (
                   <div className="d-flex flex-wrap gap-2">
-                    {applicantData.skills.map((skill: Skill, i: number) => (
-                      <span key={i} className="badge bg-primary">{skill.skill_name}</span>
+                    {applicantData.skills.map((skill: any, idx: number) => (
+                      <span key={idx} className="badge bg-primary">
+                        {skill.skill_name || "Unknown"}
+                      </span>
                     ))}
                   </div>
                 ) : (
                   <p>No skills data available</p>
                 )}
               </section>
+
+              <section className="mt-3">
+                <h5>Languages</h5>
+                {applicantData.languages?.length ? (
+                  <ul>
+                    {applicantData.languages.map((lang: any, idx: number) => (
+                      <li key={idx}>
+                        {lang.language_name} - Read: {lang.read} | Write: {lang.write} | Speak:{" "}
+                        {lang.speak}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p>No language data</p>
+                )}
+              </section>
             </div>
           </div>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowProfileModal(false)}>Close</Button>
-          <Button variant="primary" onClick={handleSave}>Save Profile</Button>
+          <Button variant="secondary" onClick={() => setShowProfileModal(false)}>
+            Close
+          </Button>
+          <Button variant="primary" onClick={handleSave}>
+            Save Profile
+          </Button>
         </Modal.Footer>
       </Modal>
 
       {/* Save Profile Modal */}
-      <Modal
-        show={showSaveModal}
-        onHide={() => setShowSaveModal(false)}
-        size="md"
-        centered
-      >
+      <Modal show={showSaveModal} onHide={() => setShowSaveModal(false)} size="md" centered>
         <Modal.Header closeButton>
           <Modal.Title>Save Profile: {applicantData.profile.fullName}</Modal.Title>
         </Modal.Header>
@@ -254,7 +255,7 @@ const ApplicantProfileModal: React.FC<ApplicantProfileModalProps> = ({
             <Form.Group className="mb-3">
               <Form.Label>Category</Form.Label>
               <Select
-                options={categories.map(c => ({ value: c.id, label: c.name }))}
+                options={categories.map((c) => ({ value: c.id, label: c.name }))}
                 value={category}
                 onChange={setCategory}
                 placeholder="Select category"
@@ -264,7 +265,7 @@ const ApplicantProfileModal: React.FC<ApplicantProfileModalProps> = ({
             <Form.Group className="mb-3">
               <Form.Label>Position</Form.Label>
               <CreatableSelect
-                options={positions.map(p => ({ value: p.id, label: p.name }))}
+                options={positions.map((p) => ({ value: p.id, label: p.name }))}
                 value={position}
                 onChange={setPosition}
                 onCreateOption={(input) => setPosition({ value: input, label: input })}
@@ -275,7 +276,7 @@ const ApplicantProfileModal: React.FC<ApplicantProfileModalProps> = ({
             <Form.Group className="mb-3">
               <Form.Label>Folder</Form.Label>
               <CreatableSelect
-                options={savedCollections.map(f => ({ value: f.id, label: f.name }))}
+                options={savedCollections.map((f) => ({ value: f.id, label: f.name }))}
                 value={folderName}
                 onChange={setFolderName}
                 onCreateOption={(input) => setFolderName({ value: input, label: input })}
@@ -285,7 +286,9 @@ const ApplicantProfileModal: React.FC<ApplicantProfileModalProps> = ({
           </Form>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowSaveModal(false)}>Cancel</Button>
+          <Button variant="secondary" onClick={() => setShowSaveModal(false)}>
+            Cancel
+          </Button>
           <Button variant="primary" onClick={handleSubmit} disabled={loading}>
             {loading ? <Spinner animation="border" size="sm" /> : "Save Profile"}
           </Button>

@@ -45,7 +45,6 @@ const ApplicantList: React.FC<ApplicantListProps> = ({
   return (
     <Container fluid className="py-3">
       <Card className="shadow-sm">
-        {/* Header */}
         <Card.Header className="bg-primary text-white d-flex justify-content-between align-items-center">
           <h5 className="mb-0">Applicant List</h5>
           <Button
@@ -58,7 +57,6 @@ const ApplicantList: React.FC<ApplicantListProps> = ({
         </Card.Header>
 
         <Card.Body>
-          {/* Loading State */}
           {loading && (
             <div className="text-center my-4">
               <Spinner animation="border" />
@@ -66,14 +64,12 @@ const ApplicantList: React.FC<ApplicantListProps> = ({
             </div>
           )}
 
-          {/* Error State */}
           {error && !loading && (
             <Alert variant="danger" className="text-center">
               {error}
             </Alert>
           )}
 
-          {/* Table */}
           {!loading && !error && (
             <>
               <Table responsive bordered hover className="align-middle">
@@ -100,11 +96,7 @@ const ApplicantList: React.FC<ApplicantListProps> = ({
                       >
                         <td className="text-center">
                           <img
-                            src={
-                              applicant.logo
-                                ? `http://localhost:4000${applicant.logo}`
-                                : "https://via.placeholder.com/100"
-                            }
+                            src={applicant.logo || "/placeholder.png"} // Use default if no logo
                             alt="Profile"
                             style={{
                               width: "50px",
@@ -114,9 +106,7 @@ const ApplicantList: React.FC<ApplicantListProps> = ({
                             className="rounded-circle border"
                           />
                         </td>
-                        <td>
-                          {applicant.first_name} {applicant.last_name}
-                        </td>
+                        <td>{applicant.first_name} {applicant.last_name}</td>
                         <td>{applicant.email}</td>
                         <td>{applicant.phone_number}</td>
                         <td>{applicant.address}</td>
@@ -134,7 +124,6 @@ const ApplicantList: React.FC<ApplicantListProps> = ({
                 </tbody>
               </Table>
 
-              {/* Pagination */}
               <div className="d-flex justify-content-between align-items-center mt-3">
                 <Button
                   variant="outline-secondary"
@@ -143,9 +132,7 @@ const ApplicantList: React.FC<ApplicantListProps> = ({
                 >
                   Previous
                 </Button>
-                <span className="text-muted">
-                  Page {pagination.page}
-                </span>
+                <span className="text-muted">Page {pagination.page}</span>
                 <Button
                   variant="outline-secondary"
                   onClick={onNextPage}

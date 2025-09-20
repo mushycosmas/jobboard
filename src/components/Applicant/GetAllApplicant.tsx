@@ -56,17 +56,17 @@ const GetAllApplicant: React.FC<Props> = ({ employerId }) => {
 
         setAllApplicants(data || []);
 
-        // normalize for list
+        // Normalize for list
         const normalized = (data || []).map((item: any) => ({
           id: item.profile.id,
           first_name: item.profile.first_name,
           last_name: item.profile.last_name,
           email: item.profile.email,
-          phone_number: item.profile.phone_number,
+          phone_number: item.profile.phone,
           address: item.profile.address,
-          totalExperience: item.profile.totalExperience,
-          region_name: item.profile.region_name,
-          logo: item.profile.logo,
+          totalExperience: item.profile.totalExperience || "",
+          region_name: item.profile.region_name || "",
+          logo: item.profile.logo || null,
         }));
 
         setApplicants(normalized);
@@ -165,7 +165,7 @@ const GetAllApplicant: React.FC<Props> = ({ employerId }) => {
 
       {showProfileModal && selectedApplicant && (
         <ApplicantProfileModal
-          applicantData={selectedApplicant} // Pass full object here
+          applicantData={selectedApplicant} // Pass full object
           experiences={selectedApplicant.experiences}
           skills={selectedApplicant.skills}
           socialMediaLinks={selectedApplicant.socialMediaLinks}

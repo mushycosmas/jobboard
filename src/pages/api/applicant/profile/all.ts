@@ -11,6 +11,13 @@ interface CVData {
   skills: any[];
   referees: any[];
   socialMediaLinks: any[];
+  positions: any[];
+}
+
+function formatDate(date?: Date | string | null) {
+  if (!date) return null;
+  const d = new Date(date);
+  return d.toISOString().split("T")[0]; // YYYY-MM-DD
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -19,69 +26,117 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    // 🔹 Fetch all applicants (basic profile only)
+    // 🔹 Fetch applicants
     const [applicants] = await db.query<RowDataPacket[]>(`
       SELECT 
         u.email,
         a.id,
+        a.first_name,
+        a.last_name,
         CONCAT(a.first_name, ' ', a.last_name) AS fullName,
         a.about AS summary,
         a.dob,
-        aa.address,
-        ap.phone_number AS phone,
-        r.name AS region_name,
-        c.name AS country_name,
-        g.name AS gender,
-        m.name AS marital_status
+        (SELECT address FROM applicant_addresses WHERE applicant_id = a.id LIMIT 1) AS address,
+        (SELECT phone_number FROM applicant_phones WHERE applicant_id = a.id LIMIT 1) AS phone,
+        (SELECT r.name FROM regions r 
+          JOIN applicant_addresses aa ON r.id = aa.region_id 
+          WHERE aa.applicant_id = a.id LIMIT 1) AS region_name,
+        (SELECT c.name FROM countries c 
+          JOIN regions r ON c.id = r.country_id
+          JOIN applicant_addresses aa ON r.id = aa.region_id 
+          WHERE aa.applicant_id = a.id LIMIT 1) AS country_name,
+        (SELECT name FROM genders WHERE id = a.gender_id) AS gender,
+        (SELECT name FROM marital_statuses WHERE id = a.marital_id) AS marital_status,
+        a.logo
       FROM applicants a
       LEFT JOIN users u ON a.user_id = u.id
-      LEFT JOIN applicant_addresses aa ON a.id = aa.applicant_id
-      LEFT JOIN applicant_phones ap ON a.id = ap.applicant_id
-      LEFT JOIN regions r ON aa.region_id = r.id
-      LEFT JOIN countries c ON r.country_id = c.id
-      LEFT JOIN genders g ON a.gender_id = g.id
-      LEFT JOIN marital_statuses m ON a.marital_id = m.id
+      GROUP BY a.id
     `);
 
     if (!applicants.length) {
       return res.status(404).json({ message: "No applicants found" });
     }
 
-    // 🔹 Fetch related data for all applicants
+    // 🔹 Fetch education
     const [educationRows] = await db.query<RowDataPacket[]>(`
-      SELECT * FROM applicant_educations
-    `);
-    const [experienceRows] = await db.query<RowDataPacket[]>(`
-      SELECT * FROM applicant_experiences
-    `);
-    const [languageRows] = await db.query<RowDataPacket[]>(`
-      SELECT * FROM applicant_languages
-    `);
-    const [professionalRows] = await db.query<RowDataPacket[]>(`
-      SELECT * FROM applicant_professionals
-    `);
-    const [skillRows] = await db.query<RowDataPacket[]>(`
-      SELECT * FROM applicant_skills
-    `);
-    const [refereeRows] = await db.query<RowDataPacket[]>(`
-      SELECT * FROM applicant_referees
-    `);
-    const [socialRows] = await db.query<RowDataPacket[]>(`
-      SELECT * FROM applicant_social_medias
+      SELECT ae.*, el.education_level, i.name AS institution_name, ind.industry_name AS industry_name
+      FROM applicant_educations ae
+      LEFT JOIN education_levels el ON ae.education_level_id = el.id
+      LEFT JOIN institutions i ON ae.institution_id = i.id
+      LEFT JOIN industries ind ON ae.category_id = ind.id
     `);
 
-    // 🔹 Group data by applicant
+    // 🔹 Fetch experiences and join institutions
+    const [experienceRows] = await db.query<RowDataPacket[]>(`
+      SELECT ae.*, i.name AS institution_name
+      FROM applicant_experiences ae
+      LEFT JOIN institutions i ON ae.institution_id = i.id
+    `);
+
+    // 🔹 Fetch languages with level names
+    const [languageRows] = await db.query<RowDataPacket[]>(`
+      SELECT al.*, l.name AS language_name,
+        lr.name AS read_level,
+        lw.name AS write_level,
+        ls.name AS speak_level
+      FROM applicant_languages al
+      LEFT JOIN languages l ON al.language_id = l.id
+      LEFT JOIN language_reads lr ON al.read_id = lr.id
+      LEFT JOIN language_writes lw ON al.write_id = lw.id
+      LEFT JOIN language_speaks ls ON al.speak_id = ls.id
+    `);
+
+    // 🔹 Fetch other related tables
+    const [professionalRows] = await db.query<RowDataPacket[]>(`SELECT * FROM applicant_professionals`);
+    const [skillRows] = await db.query<RowDataPacket[]>(`
+      SELECT askill.*, s.skill_name AS skill_name
+      FROM applicant_skills askill
+      LEFT JOIN skills s ON askill.skill_id = s.id
+    `);
+    const [refereeRows] = await db.query<RowDataPacket[]>(`SELECT * FROM applicant_referees`);
+    const [socialRows] = await db.query<RowDataPacket[]>(`SELECT * FROM applicant_social_medias`);
+    const [positionRows] = await db.query<RowDataPacket[]>(`SELECT * FROM positions`);
+
+    // 🔹 Map data per applicant
     const candidates: CVData[] = applicants.map((profile) => {
       const applicantId = profile.id;
+      profile.logo = profile.logo || null;
+      profile.dob = formatDate(profile.dob);
+
       return {
         profile,
-        education: educationRows.filter((e) => e.applicant_id === applicantId),
-        experiences: experienceRows.filter((e) => e.applicant_id === applicantId),
-        languages: languageRows.filter((l) => l.applicant_id === applicantId),
-        professionalQualifications: professionalRows.filter((p) => p.applicant_id === applicantId),
+        education: educationRows
+          .filter((e) => e.applicant_id === applicantId)
+          .map((e) => ({
+            ...e,
+            started: formatDate(e.started),
+            ended: formatDate(e.ended),
+          })),
+        experiences: experienceRows
+          .filter((e) => e.applicant_id === applicantId)
+          .map((exp) => ({
+            ...exp,
+            from: formatDate(exp.from),
+            to: formatDate(exp.to),
+          })),
+        languages: languageRows
+          .filter((l) => l.applicant_id === applicantId)
+          .map((l) => ({
+            ...l,
+            read: l.read_level,
+            write: l.write_level,
+            speak: l.speak_level,
+          })),
+        professionalQualifications: professionalRows
+          .filter((p) => p.applicant_id === applicantId)
+          .map((p) => ({
+            ...p,
+            obtained_date: formatDate(p.obtained_date),
+          })),
         skills: skillRows.filter((s) => s.applicant_id === applicantId),
         referees: refereeRows.filter((r) => r.applicant_id === applicantId),
         socialMediaLinks: socialRows.filter((s) => s.applicant_id === applicantId),
+        positions: positionRows,
       };
     });
 
