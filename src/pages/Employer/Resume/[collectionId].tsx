@@ -139,7 +139,7 @@ const CollectionDetailsPage: React.FC = () => {
               <p>No resumes in this collection.</p>
             )}
 
-            <Link href="/employer/resume">
+            <Link href="/employer/resume/candidate-profile">
               <Button variant="secondary" className="mt-3">
                 Back to Collections
               </Button>
