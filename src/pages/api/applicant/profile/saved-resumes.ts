@@ -9,7 +9,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const { applicant_id, employer_id, collection_id, position_id, category_id, user_id } = req.body;
 
       if (!applicant_id || !employer_id || !user_id) {
-        return res.status(400).json({ message: "Missing applicant_id, employer_id or user_id" });
+        return res.status(400).json({ message: "Missing applicant_id, employer_id, or user_id" });
       }
 
       let finalPositionId = position_id;
@@ -63,39 +63,57 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     if (req.method === "GET") {
-      const employer_id = req.query.employer_id as string;
       const collection_id = req.query.collection_id as string;
       const user_id = req.query.user_id as string;
 
-      if (!employer_id || !collection_id || !user_id) {
-        return res.status(400).json({ message: "Missing employer_id, collection_id or user_id" });
+      // If collection_id is provided, fetch resumes in that collection
+      if (collection_id) {
+      const [rows] = await db.execute<RowDataPacket[]>(
+  `SELECT sr.id AS resume_id,
+          a.id AS applicant_id,
+          a.first_name, 
+          a.last_name, 
+          a.logo,
+          p.name AS position_name,
+          i.industry_name AS category_name,
+          u.email,
+          (SELECT phone_number FROM applicant_phones ap WHERE ap.applicant_id = a.id LIMIT 1) AS phone_number,
+          (SELECT address FROM applicant_addresses aa WHERE aa.applicant_id = a.id LIMIT 1) AS address
+   FROM saved_resumes sr
+   LEFT JOIN applicants a ON sr.applicant_id = a.id
+   LEFT JOIN positions p ON sr.position_id = p.id
+   LEFT JOIN industries i ON sr.category_id = i.id
+   LEFT JOIN users u ON a.user_id = u.id
+   WHERE sr.collection_id = ?`,
+  [collection_id]
+);
+
+
+        return res.status(200).json(rows);
       }
 
-      const [rows] = await db.execute<RowDataPacket[]>(
-        `SELECT sr.*, e.company_name AS employer_name, c.name AS collection_name,
-                p.name AS position_name, i.industry_name AS category_name,
-                a.first_name, a.last_name, a.id, a.logo,
-                u.email, ap.phone_number, aa.address,
-                r.name AS region_name, cn.name AS applicant_country,
-                m.name AS applicant_marital_status, g.name AS applicant_gender
-         FROM saved_resumes sr
-         LEFT JOIN employers e ON sr.employer_id = e.id
-         LEFT JOIN collections c ON sr.collection_id = c.id
-         LEFT JOIN positions p ON sr.position_id = p.id
-         LEFT JOIN industries i ON sr.category_id = i.id
-         LEFT JOIN applicants a ON sr.applicant_id = a.id
-         LEFT JOIN users u ON a.user_id = u.id
-         LEFT JOIN applicant_addresses aa ON a.id = aa.applicant_id
-         LEFT JOIN regions r ON aa.region_id = r.id
-         LEFT JOIN countries cn ON r.country_id = cn.id
-         LEFT JOIN marital_statuses m ON a.marital_id = m.id
-         LEFT JOIN genders g ON a.gender_id = g.id
-         LEFT JOIN applicant_phones ap ON a.id = ap.applicant_id
-         WHERE sr.employer_id = ? AND sr.collection_id = ? AND sr.user_id = ?`,
-        [employer_id, collection_id, user_id]
-      );
+      // If user_id is provided (and no collection_id), fetch all collections for the user
+      if (user_id) {
+        const [rows] = await db.execute<RowDataPacket[]>(
+          `SELECT 
+              c.id AS collection_id,
+              c.name AS collection_name,
+              GROUP_CONCAT(DISTINCT p.name SEPARATOR ', ') AS position_names,
+              GROUP_CONCAT(DISTINCT i.industry_name SEPARATOR ', ') AS category_name,
+              COUNT(sr.id) AS Total_Data_Available
+           FROM collections c
+           LEFT JOIN saved_resumes sr ON sr.collection_id = c.id
+           LEFT JOIN positions p ON sr.position_id = p.id
+           LEFT JOIN industries i ON sr.category_id = i.id
+           WHERE c.user_id = ?
+           GROUP BY c.id, c.name`,
+          [user_id]
+        );
 
-      return res.status(200).json(rows);
+        return res.status(200).json(rows);
+      }
+
+      return res.status(400).json({ message: "Missing collection_id or user_id" });
     }
 
     if (req.method === "PUT") {

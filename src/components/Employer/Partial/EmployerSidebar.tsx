@@ -157,10 +157,10 @@ useEffect(() => {
           <Accordion.Header>Search Resumes</Accordion.Header>
           <Accordion.Body>
             <div>
-              <Link href="/employer/Resume/candidate-profile">Search Resume</Link>
+              <Link href="/employer/resume/candidate-profile">Search Resume</Link>
             </div>
             <div>
-              <Link href="/employer/resume-collections">Saved Resumes</Link>
+              <Link href="/employer/resume/resume-collections">Saved Resumes</Link>
             </div>
           </Accordion.Body>
         </Accordion.Item>
