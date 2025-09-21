@@ -5,9 +5,11 @@ import { useRouter } from "next/router";
 import { Container, Card, Table, Spinner, Button } from "react-bootstrap";
 import Link from "next/link";
 import EmployerLayout from "../../../Layouts/EmployerLayout";
+import ApplicantProfileModal from "../../../components/Applicant/ApplicantProfileModal";
 
 interface SavedResume {
-  id: number;
+  id: number; // saved_resume ID
+  applicant_id: number; // actual applicant profile ID
   first_name: string;
   last_name: string;
   logo: string;
@@ -24,6 +26,11 @@ const CollectionDetailsPage: React.FC = () => {
 
   const [resumes, setResumes] = useState<SavedResume[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingProfile, setLoadingProfile] = useState(false);
+
+  // Modal state
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [selectedResume, setSelectedResume] = useState<any>(null); // full applicant profile
 
   useEffect(() => {
     if (!collectionId) return;
@@ -44,6 +51,25 @@ const CollectionDetailsPage: React.FC = () => {
 
     fetchResumes();
   }, [collectionId]);
+
+  const handleOpenProfile = async (resume: SavedResume) => {
+    try {
+      setLoadingProfile(true);
+
+      // Fetch full applicant profile using the actual applicant_id
+      const res = await fetch(`/api/applicant/profile/${resume.applicant_id}`);
+      if (!res.ok) throw new Error("Failed to fetch profile");
+
+      const fullData = await res.json();
+      setSelectedResume(fullData);
+      setShowProfileModal(true);
+    } catch (error) {
+      console.error("Error fetching applicant profile:", error);
+      alert("Failed to fetch full profile.");
+    } finally {
+      setLoadingProfile(false);
+    }
+  };
 
   if (loading)
     return (
@@ -70,6 +96,7 @@ const CollectionDetailsPage: React.FC = () => {
                     <th>Email</th>
                     <th>Phone</th>
                     <th>Address</th>
+                    <th>Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -91,6 +118,19 @@ const CollectionDetailsPage: React.FC = () => {
                       <td>{resume.email}</td>
                       <td>{resume.phone_number || "-"}</td>
                       <td>{resume.address || "-"}</td>
+                      <td>
+                        <Button
+                          variant="info"
+                          size="sm"
+                          onClick={() => handleOpenProfile(resume)}
+                        >
+                          {loadingProfile ? (
+                            <Spinner animation="border" size="sm" />
+                          ) : (
+                            "View Profile"
+                          )}
+                        </Button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -106,6 +146,18 @@ const CollectionDetailsPage: React.FC = () => {
             </Link>
           </Card.Body>
         </Card>
+
+        {/* Applicant Profile Modal */}
+        {selectedResume && showProfileModal && (
+          <ApplicantProfileModal
+            applicantData={selectedResume} // full profile
+            categories={[]} // pass actual categories
+            positions={[]} // pass actual positions
+            savedCollections={[]} // pass saved collections
+            employerId={1} // pass actual employer id
+            setShowProfileModal={setShowProfileModal}
+          />
+        )}
       </Container>
     </EmployerLayout>
   );

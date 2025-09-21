@@ -69,22 +69,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // If collection_id is provided, fetch resumes in that collection
       if (collection_id) {
       const [rows] = await db.execute<RowDataPacket[]>(
-  `SELECT sr.id AS resume_id,
-          a.id AS applicant_id,
-          a.first_name, 
-          a.last_name, 
-          a.logo,
-          p.name AS position_name,
-          i.industry_name AS category_name,
-          u.email,
-          (SELECT phone_number FROM applicant_phones ap WHERE ap.applicant_id = a.id LIMIT 1) AS phone_number,
-          (SELECT address FROM applicant_addresses aa WHERE aa.applicant_id = a.id LIMIT 1) AS address
-   FROM saved_resumes sr
-   LEFT JOIN applicants a ON sr.applicant_id = a.id
-   LEFT JOIN positions p ON sr.position_id = p.id
-   LEFT JOIN industries i ON sr.category_id = i.id
-   LEFT JOIN users u ON a.user_id = u.id
-   WHERE sr.collection_id = ?`,
+  `SELECT sr.id AS id,
+       sr.applicant_id AS applicant_id,
+       a.first_name,
+       a.last_name,
+       a.logo,
+       p.name AS position_name,
+       i.industry_name AS category_name,
+       u.email,
+       (SELECT phone_number FROM applicant_phones ap WHERE ap.applicant_id = a.id LIMIT 1) AS phone_number,
+       (SELECT address FROM applicant_addresses aa WHERE aa.applicant_id = a.id LIMIT 1) AS address
+FROM saved_resumes sr
+LEFT JOIN applicants a ON sr.applicant_id = a.id
+LEFT JOIN positions p ON sr.position_id = p.id
+LEFT JOIN industries i ON sr.category_id = i.id
+LEFT JOIN users u ON a.user_id = u.id
+WHERE sr.collection_id = ?`,
   [collection_id]
 );
 
