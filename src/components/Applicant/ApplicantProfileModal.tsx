@@ -12,6 +12,7 @@ import {
   FaGlobe,
 } from "react-icons/fa";
 import { calculateTotalExperience } from "../../utils/experience"; 
+import { useSession } from "next-auth/react";
 
 interface ApplicantProfileModalProps {
   applicantData: any;
@@ -45,6 +46,9 @@ const ApplicantProfileModal: React.FC<ApplicantProfileModalProps> = ({
   employerId,
   setShowProfileModal,
 }) => {
+  const { data: session } = useSession(); // ✅ Get session
+  const userId = session?.user?.id;       // ✅ Use session user ID
+
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [category, setCategory] = useState<{ value: any; label: string } | null>(null);
   const [position, setPosition] = useState<{ value: any; label: string } | null>(null);
@@ -54,6 +58,11 @@ const ApplicantProfileModal: React.FC<ApplicantProfileModalProps> = ({
   const handleSave = () => setShowSaveModal(true);
 
   const handleSubmit = async () => {
+    if (!userId) {
+      alert("You must be logged in to save the profile.");
+      return;
+    }
+
     if (!category && !position && !folderName) return;
 
     setLoading(true);
@@ -63,6 +72,7 @@ const ApplicantProfileModal: React.FC<ApplicantProfileModalProps> = ({
       collection_id: folderName?.value || null,
       employer_id: employerId,
       applicant_id: applicantData?.profile?.id,
+      user_id: userId, // ✅ include session user ID
     };
 
     try {
@@ -265,31 +275,7 @@ const ApplicantProfileModal: React.FC<ApplicantProfileModalProps> = ({
                 </section>
               )}
 
-              {/* Education */}
-              {filteredEducation?.length > 0 && (
-                <section className="mt-3">
-                  <h5>Education</h5>
-                  <ul>
-                    {filteredEducation.map((edu: any, idx: number) => (
-                      <li key={idx} style={{ marginBottom: "0.5rem", wordBreak: "break-word" }}>
-                        <strong>
-                          {edu.education_level || ""}{" "}
-                          {edu.programme_name ? `- ${edu.programme_name}` : ""}
-                        </strong>
-                        {edu.institution_name && (
-                          <p>
-                            {edu.institution_name} |{" "}
-                            {edu.started && formatDate(edu.started)} -{" "}
-                            {edu.ended && formatDate(edu.ended)}
-                          </p>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              )}
-
-              {/* Professional Qualifications */}
+             {/* Professional Qualifications */}
               {filteredProfessional?.length > 0 && (
                 <section className="mt-3">
                   <h5>Professional Qualifications</h5>
