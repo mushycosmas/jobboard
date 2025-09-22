@@ -5,13 +5,13 @@ import bcrypt from "bcryptjs";
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
     res.setHeader("Allow", ["POST"]);
-    return res.status(405).end(`Method ${req.method} Not Allowed`);
+    return res.status(405).json({ message: `Method ${req.method} Not Allowed` });
   }
 
   try {
     let { userId, currentPassword, newPassword } = req.body;
 
-    // Trim inputs to remove accidental spaces
+    // Sanitize input
     currentPassword = currentPassword?.trim();
     newPassword = newPassword?.trim();
 
@@ -19,7 +19,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ message: "Missing required fields" });
     }
 
-    // Get the user's current password hash from DB
+    // Get user’s current password hash
     const [rows]: any = await db.query(
       "SELECT password FROM users WHERE id = ?",
       [userId]
@@ -37,21 +37,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ message: "Current password is incorrect" });
     }
 
-    // Prevent using the same password
+    // Prevent reusing the same password
     const isSamePassword = await bcrypt.compare(newPassword, storedHash);
     if (isSamePassword) {
       return res.status(400).json({ message: "New password cannot be the same as current password" });
     }
 
-    // Hash the new password
+    // Hash and update new password
     const newHash = await bcrypt.hash(newPassword, 10);
-
-    // Update password in DB
     await db.query("UPDATE users SET password = ? WHERE id = ?", [newHash, userId]);
 
     return res.status(200).json({ message: "Password changed successfully" });
   } catch (err) {
+    // Log the real error for debugging, but don’t expose details to client
     console.error("Password change error:", err);
-    return res.status(500).json({ message: "Internal server error", error: err });
+
+    return res.status(500).json({
+      message: "Something went wrong while changing password. Please try again later.",
+    });
   }
 }

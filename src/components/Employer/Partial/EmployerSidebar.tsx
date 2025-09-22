@@ -8,6 +8,7 @@ import { useSession } from "next-auth/react";
 const EmployerSidebar: React.FC = () => {
   const { data: session } = useSession();
   const [jobCounts, setJobCounts] = useState({ active: 0, expired: 0, all: 0 });
+  const [userCount, setUserCount] = useState(0);
   const [showModal, setShowModal] = useState(false);
   const [newLogo, setNewLogo] = useState<File | null>(null);
   const [logo, setLogo] = useState<string | null>(null);
@@ -15,9 +16,10 @@ const EmployerSidebar: React.FC = () => {
   const employerId = session?.user?.employerId;
   const employerName = session?.user?.employerName;
 
-useEffect(() => {
-  if (employerId) {
-    // Fetch logo
+  useEffect(() => {
+    if (!employerId) return;
+
+    // Fetch employer logo
     const fetchEmployerLogo = async () => {
       try {
         const res = await fetch(`/api/employer/logo/${employerId}`);
@@ -27,36 +29,46 @@ useEffect(() => {
         console.error("Error fetching employer logo:", err);
       }
     };
-    fetchEmployerLogo();
 
     // Fetch job counts
     const fetchJobCounts = async () => {
       try {
         const res = await fetch(`/api/job/counts/${employerId}`);
         const data = await res.json();
-
-        // Map API response to sidebar state
         setJobCounts({
           all: data.totalJobs || 0,
           active: data.activeJobs || 0,
-          expired: (data.totalJobs - data.activeJobs) || 0, // compute expired jobs
+          expired: (data.totalJobs - data.activeJobs) || 0,
         });
       } catch (err) {
         console.error("Error fetching job counts:", err);
       }
     };
 
+    // Fetch number of users linked to this employer
+    const fetchUserCount = async () => {
+      try {
+        const res = await fetch(`/api/employer/users?employerId=${employerId}`);
+        const data = await res.json();
+        setUserCount(Array.isArray(data) ? data.length : 0);
+      } catch (err) {
+        console.error("Error fetching users:", err);
+      }
+    };
+
+    fetchEmployerLogo();
     fetchJobCounts();
-  }
-}, [employerId]);
+    fetchUserCount();
+  }, [employerId]);
 
-
+  // Handle file input change
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       setNewLogo(e.target.files[0]);
     }
   };
 
+  // Upload new employer logo
   const handleLogoUpload = async () => {
     if (!newLogo || !employerId) return;
 
@@ -82,6 +94,7 @@ useEffect(() => {
 
   return (
     <div>
+      {/* Employer Card */}
       <Card className="mb-2">
         <Card.Body className="text-center">
           <img
@@ -102,6 +115,7 @@ useEffect(() => {
         </Card.Body>
       </Card>
 
+      {/* Modal for uploading logo */}
       <Modal show={showModal} onHide={() => setShowModal(false)} centered>
         <Modal.Header closeButton>
           <Modal.Title>Upload New Logo</Modal.Title>
@@ -119,6 +133,7 @@ useEffect(() => {
         </Modal.Footer>
       </Modal>
 
+      {/* Sidebar Accordion */}
       <Accordion defaultActiveKey="0" className="mt-2">
         <Accordion.Item eventKey="0">
           <Accordion.Header>Dashboard</Accordion.Header>
@@ -180,10 +195,12 @@ useEffect(() => {
               <Link href="/employer/profile">Employer Profile</Link>
             </div>
             <div>
-              <Link href="/employer/manage/users">Manage Users (5)</Link>
+              <Link href="/employer/manage/users">
+                Manage Users ({userCount}) {/* Dynamic user count */}
+              </Link>
             </div>
             <div>
-              <Link href="/employer/change/password">Change Password</Link>
+              <Link href="/employer/manage/change-password">Change Password</Link>
             </div>
           </Accordion.Body>
         </Accordion.Item>
