@@ -3,7 +3,7 @@
 import React from "react";
 
 interface CVTemplateProps {
-  data: any;
+  data?: any;
 }
 
 const CVTemplate3: React.FC<CVTemplateProps> = ({ data }) => {
@@ -27,17 +27,21 @@ const CVTemplate3: React.FC<CVTemplateProps> = ({ data }) => {
       <div style={{ flex: 1 }}>
         <h2>{profile.fullName ?? "No Name"}</h2>
         <p>
-          {profile.email ?? "N/A"}<br />
-          {profile.phone ?? "N/A"}<br />
+          {profile.email ?? "N/A"}
+          <br />
+          {profile.phone ?? "N/A"}
+          <br />
           {profile.address ?? "N/A"}
         </p>
-        <p className="fst-italic">{profile.summary ?? "No summary provided"}</p>
+        <p className="fst-italic">
+          {profile.summary ?? "No summary provided"}
+        </p>
 
         <h5>Skills</h5>
         {skills.length ? (
           <ul>
-            {skills.map((skill: string, idx: number) => (
-              <li key={idx}>{skill}</li>
+            {skills.map((s: any, idx: number) => (
+              <li key={idx}>{s.skill_name ?? "N/A"}</li>
             ))}
           </ul>
         ) : (
@@ -47,8 +51,11 @@ const CVTemplate3: React.FC<CVTemplateProps> = ({ data }) => {
         <h5>Languages</h5>
         {languages.length ? (
           <ul>
-            {languages.map((lang: string, idx: number) => (
-              <li key={idx}>{lang}</li>
+            {languages.map((l: any, idx: number) => (
+              <li key={idx}>
+                {l.language_name ?? "N/A"} (R:{l.read_level ?? "N/A"}, W:
+                {l.write_level ?? "N/A"}, S:{l.speak_level ?? "N/A"})
+              </li>
             ))}
           </ul>
         ) : (
@@ -60,7 +67,11 @@ const CVTemplate3: React.FC<CVTemplateProps> = ({ data }) => {
           <ul>
             {socialMediaLinks.map((link: any, idx: number) => (
               <li key={idx}>
-                <a href={link.url ?? "#"} target="_blank" rel="noopener noreferrer">
+                <a
+                  href={link.url ?? "#"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   {link.platform ?? "N/A"}
                 </a>
               </li>
@@ -78,7 +89,8 @@ const CVTemplate3: React.FC<CVTemplateProps> = ({ data }) => {
           <ul>
             {education.map((edu: any, idx: number) => (
               <li key={idx}>
-                {edu.degree ?? "N/A"} - {edu.institution ?? "N/A"} ({edu.started ?? "N/A"} - {edu.ended ?? "N/A"})
+                {edu.degree ?? "N/A"} – {edu.institution_name ?? "N/A"} (
+                {edu.started ?? "N/A"} – {edu.ended ?? "N/A"})
               </li>
             ))}
           </ul>
@@ -91,7 +103,8 @@ const CVTemplate3: React.FC<CVTemplateProps> = ({ data }) => {
           <ul>
             {professionalQualifications.map((pq: any, idx: number) => (
               <li key={idx}>
-                {pq.course ?? "N/A"} at {pq.institution ?? "N/A"} ({pq.started ?? "N/A"} - {pq.ended ?? "N/A"})
+                {pq.course ?? "N/A"} at {pq.institution_name ?? "N/A"} (
+                {pq.started ?? "N/A"} – {pq.ended ?? "N/A"})
               </li>
             ))}
           </ul>
@@ -104,7 +117,9 @@ const CVTemplate3: React.FC<CVTemplateProps> = ({ data }) => {
           <ul>
             {experiences.map((exp: any, idx: number) => (
               <li key={idx}>
-                {exp.position ?? "N/A"} at {exp.institution ?? "N/A"} ({exp.from ?? "N/A"} - {exp.to ?? (exp.is_currently_working ? "Present" : "N/A")})
+                {exp.position ?? "N/A"} at {exp.institution ?? "N/A"} (
+                {exp.from ?? "N/A"} –{" "}
+                {exp.is_currently_working ? "Present" : exp.to ?? "N/A"})
               </li>
             ))}
           </ul>
@@ -117,7 +132,8 @@ const CVTemplate3: React.FC<CVTemplateProps> = ({ data }) => {
           <ul>
             {referees.map((ref: any, idx: number) => (
               <li key={idx}>
-                {ref.name ?? "N/A"} - {ref.position ?? "N/A"} | {ref.contact ?? "N/A"}
+                {ref.name ?? "N/A"} – {ref.position ?? "N/A"} |{" "}
+                {ref.contact ?? "N/A"}
               </li>
             ))}
           </ul>
@@ -130,3 +146,4 @@ const CVTemplate3: React.FC<CVTemplateProps> = ({ data }) => {
 };
 
 export default CVTemplate3;
+

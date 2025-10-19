@@ -11,19 +11,33 @@ import RefereesSection from "../CVSections/RefereesSection";
 import SocialMediaSection from "../CVSections/SocialMediaSection";
 
 interface CVTemplateProps {
-  data: any;
+  data?: {
+    profile?: Record<string, any>;
+    education?: any[];
+    professionalQualifications?: any[];
+    experiences?: any[];
+    languages?: any[];
+    skills?: any[];
+    referees?: any[];
+    socialMediaLinks?: any[];
+  };
 }
 
 const CVTemplate1: React.FC<CVTemplateProps> = ({ data }) => {
   return (
     <div
       className="cv-template border p-4"
-      style={{ maxWidth: 800, margin: "0 auto", fontFamily: "Arial" }}
+      style={{
+        maxWidth: 800,
+        margin: "0 auto",
+        fontFamily: "Arial, sans-serif",
+      }}
     >
-      {/* Provide fallback empty objects/arrays for safety */}
       <PersonalProfile profile={data?.profile ?? {}} />
       <EducationSection educationalQualifications={data?.education ?? []} />
-      <ProfessionalQualification professionalQualifications={data?.professionalQualifications ?? []} />
+      <ProfessionalQualification
+        professionalQualifications={data?.professionalQualifications ?? []}
+      />
       <ExperienceSection experiences={data?.experiences ?? []} />
       <LanguagesSection languages={data?.languages ?? []} />
       <SkillsSection skills={data?.skills ?? []} />
@@ -34,3 +48,4 @@ const CVTemplate1: React.FC<CVTemplateProps> = ({ data }) => {
 };
 
 export default CVTemplate1;
+

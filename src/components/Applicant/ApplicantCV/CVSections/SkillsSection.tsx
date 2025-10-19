@@ -2,17 +2,27 @@
 
 import React from "react";
 
-interface SkillsProps {
-  skills: string[];
+interface Skill {
+  skill_name: string;
+  level?: string;
 }
 
-const SkillsSection: React.FC<SkillsProps> = ({ skills }) => {
+interface SkillsProps {
+  skills: Skill[];
+}
+
+const SkillsSection: React.FC<SkillsProps> = ({ skills = [] }) => {
+  if (!skills.length) return <p>No skills listed</p>;
+
   return (
     <div className="skills-section mb-3">
       <h3>Skills</h3>
       <ul>
         {skills.map((skill, idx) => (
-          <li key={idx}>{skill}</li>
+          <li key={idx}>
+            <strong>{skill.skill_name ?? "N/A"}</strong>
+            {skill.level ? ` (${skill.level})` : ""}
+          </li>
         ))}
       </ul>
       <hr />

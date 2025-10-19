@@ -2,13 +2,13 @@
 
 import React from "react";
 
-interface SocialMediaLink {
-  platform: string;
+interface SocialMediaItem {
+  platform_name: string;
   url: string;
 }
 
 interface SocialMediaProps {
-  socialMediaLinks: SocialMediaLink[];
+  socialMediaLinks: SocialMediaItem[];
 }
 
 const SocialMediaSection: React.FC<SocialMediaProps> = ({ socialMediaLinks }) => {
@@ -18,7 +18,9 @@ const SocialMediaSection: React.FC<SocialMediaProps> = ({ socialMediaLinks }) =>
       <ul>
         {socialMediaLinks.map((link, idx) => (
           <li key={idx}>
-            <a href={link.url} target="_blank" rel="noopener noreferrer">{link.platform}</a>
+            <a href={link.url} target="_blank" rel="noopener noreferrer">
+              {link.platform_name}
+            </a>
           </li>
         ))}
       </ul>

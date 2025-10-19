@@ -29,7 +29,6 @@ const CVPage: React.FC = () => {
   const [cvData, setCvData] = useState<CVData | null>(null);
   const hiddenCVRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  // Fetch applicant CV using session.user.id
   useEffect(() => {
     if (!session?.user?.applicantId) return;
 
@@ -45,7 +44,7 @@ const CVPage: React.FC = () => {
     };
 
     fetchCVData();
-  }, [session?.user?.id]);
+  }, [session?.user?.applicantId]);
 
   const templates = [
     { id: "Template 1", component: <CVTemplate1 data={cvData} /> },
@@ -80,23 +79,28 @@ const CVPage: React.FC = () => {
       <div className="container my-4">
         <h1 className="text-center mb-4">Preview & Download CV Templates</h1>
 
-        <div
-          className="d-flex overflow-auto"
-          style={{ gap: "1rem", paddingBottom: "1rem", scrollSnapType: "x mandatory" }}
-        >
+        <div className="d-flex overflow-auto" style={{ gap: "1rem", paddingBottom: "1rem" }}>
           {templates.map((t) => (
             <div
               key={t.id}
               className="card flex-shrink-0 shadow-sm"
-              style={{
-                width: "300px",
-                scrollSnapAlign: "center",
-                cursor: "pointer",
-              }}
+              style={{ width: "300px", cursor: "pointer" }}
             >
               <div className="card-body">
                 <h5 className="card-title text-center">{t.id}</h5>
-                <div style={{ height: "400px", overflow: "hidden" }}>{t.component}</div>
+                
+                {/* Preview container */}
+                <div
+                  style={{
+                    maxHeight: "500px",
+                    overflowY: "auto",
+                    border: "1px solid #ddd",
+                    padding: "0.5rem",
+                  }}
+                >
+                  {t.component}
+                </div>
+
                 <Button
                   variant="success"
                   className="mt-2 w-100"
@@ -105,10 +109,15 @@ const CVPage: React.FC = () => {
                   Download PDF
                 </Button>
 
-                {/* Hidden container for PDF */}
+                {/* Hidden container for PDF generation */}
                 <div
                   ref={(el) => (hiddenCVRefs.current[t.id] = el)}
-                  style={{ position: "absolute", top: "-9999px", left: "-9999px", width: "800px" }}
+                  style={{
+                    position: "absolute",
+                    top: "-9999px",
+                    left: "-9999px",
+                    width: "800px",
+                  }}
                 >
                   {t.component}
                 </div>

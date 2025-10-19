@@ -2,14 +2,16 @@
 
 import React from "react";
 
-interface Referee {
-  name: string;
-  position: string;
-  contact: string;
+interface RefereeItem {
+  first_name: string;
+  last_name: string;
+  referee_position: string;
+  email: string;
+  phone: string;
 }
 
 interface RefereesProps {
-  referees: Referee[];
+  referees: RefereeItem[];
 }
 
 const RefereesSection: React.FC<RefereesProps> = ({ referees }) => {
@@ -19,7 +21,7 @@ const RefereesSection: React.FC<RefereesProps> = ({ referees }) => {
       <ul>
         {referees.map((ref, idx) => (
           <li key={idx}>
-            <strong>{ref.name}</strong> - {ref.position} | {ref.contact}
+            <strong>{`${ref.first_name} ${ref.last_name}`}</strong> - {ref.referee_position} | {ref.email} | {ref.phone}
           </li>
         ))}
       </ul>
