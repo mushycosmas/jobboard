@@ -5,14 +5,25 @@ import { Card, Button, Spinner } from "react-bootstrap";
 import AdminLayout from "../../../../layouts/AdminLayout";
 import CountryTable from "./CountryTable";
 import CountryModal from "./CountryModal";
-import { Country, getCountries, addCountry, updateCountry, deleteCountry } from "./CountryService";
+import {
+  Country,
+  getCountries,
+  addCountry,
+  updateCountry,
+  deleteCountry,
+} from "./CountryService";
 
-const CountryIndex = () => {
+const CountryIndex: React.FC = () => {
   const [countries, setCountries] = useState<Country[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [currentCountry, setCurrentCountry] = useState<Country>({ name: "", country_code: "", currency: "" });
+  const [currentCountry, setCurrentCountry] = useState<Country>({
+    name: "",
+    country_code: "",
+    currency: "",
+  });
 
+  // Fetch countries
   const loadCountries = async () => {
     setLoading(true);
     try {
@@ -29,6 +40,7 @@ const CountryIndex = () => {
     loadCountries();
   }, []);
 
+  // Handle add or update
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -45,6 +57,7 @@ const CountryIndex = () => {
     }
   };
 
+  // Handle delete
   const handleDelete = async (id: number) => {
     if (!id) return;
     if (confirm("Are you sure you want to delete this country?")) {
@@ -57,6 +70,18 @@ const CountryIndex = () => {
     }
   };
 
+  // Handle edit
+  const handleEdit = (country: Country) => {
+    setCurrentCountry(country);
+    setShowModal(true); // ✅ Open modal on edit
+  };
+
+  // Handle add new
+  const handleAddNew = () => {
+    setCurrentCountry({ name: "", country_code: "", currency: "" });
+    setShowModal(true);
+  };
+
   return (
     <AdminLayout>
       <div className="content p-3">
@@ -64,6 +89,7 @@ const CountryIndex = () => {
           <Card.Header>
             <h4>Manage Countries</h4>
           </Card.Header>
+
           {loading ? (
             <div className="text-center p-4">
               <Spinner animation="border" />
@@ -71,18 +97,15 @@ const CountryIndex = () => {
             </div>
           ) : (
             <Card.Body>
-              <Button
-                variant="success"
-                className="mb-3"
-                onClick={() => {
-                  setCurrentCountry({ name: "", country_code: "", currency: "" });
-                  setShowModal(true);
-                }}
-              >
+              <Button variant="success" className="mb-3" onClick={handleAddNew}>
                 Add Country
               </Button>
 
-              <CountryTable countries={countries} onEdit={setCurrentCountry} onDelete={handleDelete} />
+              <CountryTable
+                countries={countries}
+                onEdit={handleEdit} // ✅ Use handleEdit
+                onDelete={handleDelete}
+              />
             </Card.Body>
           )}
         </Card>
