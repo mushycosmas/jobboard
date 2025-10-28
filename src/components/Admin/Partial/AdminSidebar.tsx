@@ -168,7 +168,7 @@ const AdminSidebar = () => {
               <Link href="/admin/manage-users">Manage User (5)</Link>
             </div>
             <div className="pb-1">
-              <Link href="/admin/change/password">Change password</Link>
+              <Link href="/admin/change-password">Change password</Link>
             </div>
           </Accordion.Body>
         </Accordion.Item>

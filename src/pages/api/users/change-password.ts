@@ -1,30 +1,23 @@
+// src/pages/api/users/change-password.ts
 import type { NextApiRequest, NextApiResponse } from "next";
-import { db } from "@/lib/db"; // your MySQL connection
+import { db } from "@/lib/db"; // your database connection
 import bcrypt from "bcryptjs";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== "POST") {
-    res.setHeader("Allow", ["POST"]);
+  if (req.method !== "PUT") {
+    res.setHeader("Allow", ["PUT"]);
     return res.status(405).json({ message: `Method ${req.method} Not Allowed` });
   }
 
   try {
-    let { userId, currentPassword, newPassword } = req.body;
-
-    // Sanitize input
-    currentPassword = currentPassword?.trim();
-    newPassword = newPassword?.trim();
+    const { userId, currentPassword, newPassword } = req.body;
 
     if (!userId || !currentPassword || !newPassword) {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
-    // Get user’s current password hash
-    const [rows]: any = await db.query(
-      "SELECT password FROM users WHERE id = ?",
-      [userId]
-    );
-
+    // Fetch user from database
+    const [rows]: any = await db.query("SELECT password FROM users WHERE id = ?", [userId]);
     if (!rows || rows.length === 0) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -43,17 +36,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ message: "New password cannot be the same as current password" });
     }
 
-    // Hash and update new password
+    // Hash and update
     const newHash = await bcrypt.hash(newPassword, 10);
     await db.query("UPDATE users SET password = ? WHERE id = ?", [newHash, userId]);
 
     return res.status(200).json({ message: "Password changed successfully" });
   } catch (err) {
-    // Log the real error for debugging, but don’t expose details to client
-    console.error("Password change error:", err);
-
-    return res.status(500).json({
-      message: "Something went wrong while changing password. Please try again later.",
-    });
+    console.error("Change password error:", err);
+    return res.status(500).json({ message: "Internal server error" });
   }
 }
