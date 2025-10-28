@@ -1,10 +1,10 @@
 "use client";
 
-import React from "react";
-import { Button, Card, Table, Container, Spinner, Alert } from "react-bootstrap";
+import React, { useState, useMemo } from "react";
+import { Card, Button, Spinner, Alert, Container, Form } from "react-bootstrap";
+import DataTable from "react-data-table-component";
 import { calculateTotalExperience } from "../../utils/experience"; // adjust path
 
-// --- Applicant & Pagination Interfaces ---
 interface Applicant {
   id: number;
   first_name: string;
@@ -34,11 +34,9 @@ interface ApplicantListProps {
   setShowFilterModal: (show: boolean) => void;
 }
 
-// --- Helper ---
 const displayValue = (value?: string | null, fallback: string = "-") =>
   value && value.trim() !== "" ? value : fallback;
 
-// --- Component ---
 const ApplicantList: React.FC<ApplicantListProps> = ({
   applicants,
   pagination,
@@ -49,6 +47,60 @@ const ApplicantList: React.FC<ApplicantListProps> = ({
   onPreviousPage,
   setShowFilterModal,
 }) => {
+  const [searchText, setSearchText] = useState("");
+
+  // 🔍 Filtered Data
+  const filteredApplicants = useMemo(() => {
+    return applicants.filter((a) => {
+      const fullName = `${a.first_name} ${a.last_name}`.toLowerCase();
+      return (
+        fullName.includes(searchText.toLowerCase()) ||
+        a.email?.toLowerCase().includes(searchText.toLowerCase()) ||
+        a.phone_number?.toLowerCase().includes(searchText.toLowerCase()) ||
+        a.region_name?.toLowerCase().includes(searchText.toLowerCase())
+      );
+    });
+  }, [applicants, searchText]);
+
+  // 🧩 Columns for DataTable
+  const columns = [
+    {
+      name: "Profile",
+      cell: (row: Applicant) => (
+        <img
+          src={row.logo || "/placeholder.png"}
+          alt="Profile"
+          style={{
+            width: "45px",
+            height: "45px",
+            objectFit: "cover",
+            borderRadius: "50%",
+            border: "1px solid #ddd",
+          }}
+        />
+      ),
+      width: "80px",
+      ignoreRowClick: true,
+      allowOverflow: true,
+    },
+    {
+      name: "Name",
+      selector: (row: Applicant) =>
+        `${displayValue(row.first_name)} ${displayValue(row.last_name)}`,
+      sortable: true,
+      wrap: true,
+    },
+    { name: "Email", selector: (row: Applicant) => displayValue(row.email), sortable: true },
+    { name: "Phone", selector: (row: Applicant) => displayValue(row.phone_number), sortable: true },
+    { name: "Address", selector: (row: Applicant) => displayValue(row.address), wrap: true },
+    {
+      name: "Experience",
+      selector: (row: Applicant) => calculateTotalExperience(row.experiences),
+      sortable: true,
+    },
+    { name: "Region", selector: (row: Applicant) => displayValue(row.region_name), sortable: true },
+  ];
+
   return (
     <Container fluid className="py-3">
       <Card className="shadow-sm">
@@ -75,54 +127,30 @@ const ApplicantList: React.FC<ApplicantListProps> = ({
 
           {!loading && !error && (
             <>
-              <Table responsive bordered hover className="align-middle">
-                <thead className="table-light">
-                  <tr>
-                    <th>Profile</th>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Phone</th>
-                    <th>Address</th>
-                    <th>Experience</th>
-                    <th>Region</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {applicants.length > 0 ? (
-                    applicants.map((applicant) => (
-                      <tr
-                        key={applicant.id}
-                        style={{ cursor: onRowClick ? "pointer" : "default" }}
-                        onClick={() => onRowClick?.(applicant.id)}
-                      >
-                        <td className="text-center">
-                          <img
-                            src={applicant.logo || "/placeholder.png"}
-                            alt="Profile"
-                            style={{ width: "50px", height: "50px", objectFit: "cover" }}
-                            className="rounded-circle border"
-                          />
-                        </td>
-                        <td>
-                          {displayValue(applicant.first_name) + " " + displayValue(applicant.last_name)}
-                        </td>
-                        <td>{displayValue(applicant.email)}</td>
-                        <td>{displayValue(applicant.phone_number)}</td>
-                        <td>{displayValue(applicant.address)}</td>
-                        <td>{calculateTotalExperience(applicant.experiences)}</td>
-                        <td>{displayValue(applicant.region_name)}</td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={7} className="text-center text-muted py-3">
-                        No applicants found
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </Table>
+              {/* 🔍 Search Field */}
+              <Form.Control
+                type="text"
+                placeholder="Search by name, email, phone, or region..."
+                className="mb-3 w-50"
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+              />
 
+              {/* 🧾 DataTable */}
+              <DataTable
+                columns={columns}
+                data={filteredApplicants}
+                pagination
+                highlightOnHover
+                striped
+                responsive
+                dense
+                pointerOnHover
+                noDataComponent="No applicants found"
+                onRowClicked={(row) => onRowClick?.(row.id)}
+              />
+
+              {/* 🔄 Pagination Controls */}
               <div className="d-flex justify-content-between align-items-center mt-3">
                 <Button
                   variant="outline-secondary"
