@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Modal, Button, Form, Alert } from "react-bootstrap";
+import DataTable from "react-data-table-component";
 import AdminLayout from "../../../layouts/AdminLayout";
 
 interface User {
@@ -15,6 +16,8 @@ interface User {
 
 const UserManagement: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+  const [searchText, setSearchText] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [newUser, setNewUser] = useState<User>({ username: "", email: "", password: "", userType: "user" });
   const [saving, setSaving] = useState(false);
@@ -26,18 +29,36 @@ const UserManagement: React.FC = () => {
       if (!response.ok) throw new Error("Failed to fetch users");
       const data = await response.json();
       setUsers(data);
+      setFilteredUsers(data);
     } catch (err) {
       console.error(err);
       setError("Error fetching users.");
     }
   };
 
-  // Initial fetch + fallback auto-refresh every 5s
+  // Auto-refresh every 5 seconds
   useEffect(() => {
     fetchUsers();
     const interval = setInterval(fetchUsers, 5000);
     return () => clearInterval(interval);
   }, []);
+
+  // Filter users on search
+  useEffect(() => {
+    if (!searchText) {
+      setFilteredUsers(users);
+    } else {
+      const lower = searchText.toLowerCase();
+      setFilteredUsers(
+        users.filter(
+          (u) =>
+            u.username.toLowerCase().includes(lower) ||
+            u.email.toLowerCase().includes(lower) ||
+            u.userType.toLowerCase().includes(lower)
+        )
+      );
+    }
+  }, [searchText, users]);
 
   const handleShow = () => {
     setNewUser({ username: "", email: "", password: "123456", userType: "user" });
@@ -75,13 +96,9 @@ const UserManagement: React.FC = () => {
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Failed to save user");
 
-      // Merge updated user or add new one
       setUsers(prev => {
-        if (newUser.id) {
-          return prev.map(u => (u.id === data.id ? { ...u, ...data } : u));
-        } else {
-          return [...prev, data];
-        }
+        if (newUser.id) return prev.map(u => (u.id === data.id ? { ...u, ...data } : u));
+        else return [...prev, data];
       });
 
       handleClose();
@@ -104,7 +121,6 @@ const UserManagement: React.FC = () => {
         body: JSON.stringify({ id }),
       });
       if (!response.ok) throw new Error("Failed to delete user");
-
       setUsers(prev => prev.filter(u => u.id !== id));
     } catch (err) {
       console.error(err);
@@ -113,9 +129,38 @@ const UserManagement: React.FC = () => {
   };
 
   const handleEdit = (user: User) => {
-    setNewUser({ ...user, password: "" }); // clear password when editing
+    setNewUser({ ...user, password: "" });
     setShowModal(true);
   };
+
+  const columns = [
+    { name: "Username", selector: (row: User) => row.username, sortable: true },
+    { name: "Email", selector: (row: User) => row.email, sortable: true },
+    { name: "User Type", selector: (row: User) => row.userType, sortable: true },
+    {
+      name: "Status",
+      selector: (row: User) => (row.hide === 0 ? "Active" : "Inactive"),
+      sortable: true,
+      cell: (row: User) => (
+        <span style={{ color: row.hide === 0 ? "green" : "red", fontWeight: "bold" }}>
+          {row.hide === 0 ? "Active" : "Inactive"}
+        </span>
+      ),
+    },
+    {
+      name: "Actions",
+      cell: (row: User) => (
+        <>
+          <Button variant="danger" size="sm" onClick={() => handleDelete(row.id)} className="me-2">
+            Delete
+          </Button>
+          <Button variant="primary" size="sm" onClick={() => handleEdit(row)}>
+            Edit
+          </Button>
+        </>
+      ),
+    },
+  ];
 
   return (
     <AdminLayout>
@@ -127,37 +172,22 @@ const UserManagement: React.FC = () => {
           Add New User
         </Button>
 
-        <table className="table table-bordered">
-          <thead>
-            <tr>
-              <th>Username</th>
-              <th>Email</th>
-              <th>User Type</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map(user => (
-              <tr key={user.id}>
-                <td>{user.username}</td>
-                <td>{user.email}</td>
-                <td>{user.userType}</td>
-                <td style={{ color: user.hide === 0 ? "green" : "red", fontWeight: "bold" }}>
-                  {user.hide === 0 ? "Active" : "Inactive"}
-                </td>
-                <td>
-                  <Button variant="danger" size="sm" onClick={() => handleDelete(user.id)} className="me-2">
-                    Delete
-                  </Button>
-                  <Button variant="primary" size="sm" onClick={() => handleEdit(user)}>
-                    Edit
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <Form.Control
+          type="text"
+          placeholder="Search users..."
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          className="mb-2"
+        />
+
+        <DataTable
+          columns={columns}
+          data={filteredUsers}
+          pagination
+          highlightOnHover
+          responsive
+          striped
+        />
 
         <Modal show={showModal} onHide={handleClose}>
           <Modal.Header closeButton>
