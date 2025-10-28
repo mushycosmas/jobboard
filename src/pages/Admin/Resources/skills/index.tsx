@@ -1,18 +1,19 @@
-
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Card, Button, Spinner } from "react-bootstrap";
+import { Card, Button, Spinner, Form } from "react-bootstrap";
 import AdminLayout from "../../../../layouts/AdminLayout";
 import { Skill, getSkills, addSkill, updateSkill, deleteSkill } from "./SkillService";
-import SkillTable from "./SkillTable";
+import DataTable from "react-data-table-component";
 import SkillModal from "./SkillModal";
 
 const SkillIndex: React.FC = () => {
   const [skills, setSkills] = useState<Skill[]>([]);
+  const [filteredSkills, setFilteredSkills] = useState<Skill[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [currentSkill, setCurrentSkill] = useState<Skill>({ id: undefined, skill_name: "" });
+  const [searchText, setSearchText] = useState("");
 
   // Fetch skills
   const loadSkills = async () => {
@@ -20,6 +21,7 @@ const SkillIndex: React.FC = () => {
     try {
       const data = await getSkills();
       setSkills(data);
+      setFilteredSkills(data);
     } catch (err) {
       console.error("Failed to load skills:", err);
     } finally {
@@ -31,15 +33,24 @@ const SkillIndex: React.FC = () => {
     loadSkills();
   }, []);
 
+  // Filter skills by search
+  useEffect(() => {
+    if (!searchText) setFilteredSkills(skills);
+    else {
+      const lower = searchText.toLowerCase();
+      setFilteredSkills(
+        skills.filter(skill => skill.skill_name.toLowerCase().includes(lower))
+      );
+    }
+  }, [searchText, skills]);
+
   // Submit (Add / Update)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!currentSkill.skill_name?.trim()) {
       alert("Skill name is required");
       return;
     }
-
     try {
       if (currentSkill.id) {
         await updateSkill(currentSkill.id, { skill_name: currentSkill.skill_name });
@@ -77,6 +88,27 @@ const SkillIndex: React.FC = () => {
     setShowModal(true);
   };
 
+  const columns = [
+    {
+      name: "Skill Name",
+      selector: (row: Skill) => row.skill_name,
+      sortable: true,
+    },
+    {
+      name: "Actions",
+      cell: (row: Skill) => (
+        <>
+          <Button variant="primary" size="sm" className="me-2" onClick={() => handleEdit(row)}>
+            Edit
+          </Button>
+          <Button variant="danger" size="sm" onClick={() => handleDelete(row.id!)}>
+            Delete
+          </Button>
+        </>
+      ),
+    },
+  ];
+
   return (
     <AdminLayout>
       <div className="content p-3">
@@ -95,7 +127,22 @@ const SkillIndex: React.FC = () => {
             </div>
           ) : (
             <Card.Body>
-              <SkillTable skills={skills} onEdit={handleEdit} onDelete={handleDelete} />
+              <Form.Control
+                type="text"
+                placeholder="Search skills..."
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                className="mb-3"
+              />
+
+              <DataTable
+                columns={columns}
+                data={filteredSkills}
+                pagination
+                highlightOnHover
+                striped
+                responsive
+              />
             </Card.Body>
           )}
         </Card>

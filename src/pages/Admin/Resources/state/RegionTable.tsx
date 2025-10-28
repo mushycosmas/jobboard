@@ -1,6 +1,9 @@
-import React from "react";
-import { Table, Button } from "react-bootstrap";
-import { Region } from "./LocationService"; // Make sure Region interface includes country_name
+"use client";
+
+import React, { useState } from "react";
+import DataTable from "react-data-table-component";
+import { Button, Form } from "react-bootstrap";
+import { Region } from "./LocationService"; // ✅ Ensure Region includes country_name
 
 interface Props {
   regions: Region[];
@@ -9,44 +12,76 @@ interface Props {
 }
 
 const RegionTable: React.FC<Props> = ({ regions, onEdit, onDelete }) => {
+  const [filterText, setFilterText] = useState("");
+
+  // ✅ Define columns
+  const columns = [
+    {
+      name: "Region Name",
+      selector: (row: Region) => row.name,
+      sortable: true,
+    },
+    {
+      name: "Country Name",
+      selector: (row: Region) => row.country_name || "—",
+      sortable: true,
+    },
+    {
+      name: "Actions",
+      cell: (row: Region) => (
+        <>
+          <Button
+            variant="warning"
+            size="sm"
+            className="me-2"
+            onClick={() => onEdit(row)}
+          >
+            Edit
+          </Button>
+          <Button
+            variant="danger"
+            size="sm"
+            onClick={() => onDelete(row.id!)}
+          >
+            Delete
+          </Button>
+        </>
+      ),
+      ignoreRowClick: true,
+      allowOverflow: true,
+      button: true,
+    },
+  ];
+
+  // ✅ Filtered data for search
+  const filteredData = regions.filter(
+    (region) =>
+      region.name.toLowerCase().includes(filterText.toLowerCase()) ||
+      region.country_name?.toLowerCase().includes(filterText.toLowerCase())
+  );
+
   return (
-    <Table striped hover responsive>
-      <thead>
-        <tr>
-          <th>Region Name</th>
-          <th>Country Name</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {regions.length > 0 ? (
-          regions.map((region) => (
-            <tr key={region.id}>
-              <td>{region.name}</td>
-              <td>{region.country_name}</td>
-              <td>
-                <Button variant="warning" onClick={() => onEdit(region)}>
-                  Edit
-                </Button>
-                <Button
-                  variant="danger"
-                  className="ms-2"
-                  onClick={() => onDelete(region.id)}
-                >
-                  Delete
-                </Button>
-              </td>
-            </tr>
-          ))
-        ) : (
-          <tr>
-            <td colSpan={3} className="text-center">
-              No regions found
-            </td>
-          </tr>
-        )}
-      </tbody>
-    </Table>
+    <div>
+      {/* 🔍 Search input */}
+      <Form.Control
+        type="text"
+        placeholder="Search region or country..."
+        className="mb-3 w-50"
+        value={filterText}
+        onChange={(e) => setFilterText(e.target.value)}
+      />
+
+      {/* 🧩 Data Table */}
+      <DataTable
+        columns={columns}
+        data={filteredData}
+        pagination
+        highlightOnHover
+        striped
+        dense
+        noDataComponent="No regions found"
+      />
+    </div>
   );
 };
 

@@ -75,7 +75,7 @@ const AdminSidebar = () => {
           </Accordion.Header>
           <Accordion.Body>
             <div className="pb-1">
-              <a href="#">Search resume</a>
+              <a href="/admin/resume">Search resume</a>
             </div>
             <div className="pb-1">
               <a href="#">Search applicant</a>
@@ -165,7 +165,7 @@ const AdminSidebar = () => {
               <Link href="#">Order history</Link>
             </div>
             <div className="pb-1">
-              <Link href="/admin/manage-user">Manage User (5)</Link>
+              <Link href="/admin/manage-users">Manage User (5)</Link>
             </div>
             <div className="pb-1">
               <Link href="/admin/change-password">Change password</Link>
