@@ -1,24 +1,30 @@
 "use client";
-
 import React, { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useSession } from "next-auth/react";
-import EmployerLayout from "@/Layouts/EmployerLayout";
+import { Modal, Button, Dropdown, Form } from "react-bootstrap";
 import JobList from "@/components/Job/JobList";
 import JobForm from "@/components/Job/JobForm";
-import { Modal, Button, Dropdown } from "react-bootstrap";
 import useJobs, { Job } from "@/hooks/useJobs";
 
 type JobStatus = "all" | "active" | "expired";
 
-const JobManagement: React.FC = () => {
+interface JobManagerProps {
+  employerId?: string | null; // from session (for employer)
+  layout: React.ComponentType<{ children: React.ReactNode }>;
+  baseUrl: string; // e.g. "/employer/job/manage-jobs"
+  showEmployerFilter?: boolean; // for admin
+}
+
+const JobManager: React.FC<JobManagerProps> = ({
+  employerId,
+  layout: Layout,
+  baseUrl,
+  showEmployerFilter = false,
+}) => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { data: session } = useSession();
-
   const { jobs, fetchJobs, addJob, updateJob, deleteJob } = useJobs();
 
-  const [employerId, setEmployerId] = useState<string | null>(null);
   const [modalShow, setModalShow] = useState(false);
   const [modalView, setModalView] = useState(false);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
@@ -26,112 +32,85 @@ const JobManagement: React.FC = () => {
   const [jobStatus, setJobStatus] = useState<JobStatus>("all");
   const [loading, setLoading] = useState(false);
   const [jobCounts, setJobCounts] = useState({ active: 0, expired: 0, all: 0 });
+  const [employerList, setEmployerList] = useState<any[]>([]);
+  const [selectedEmployer, setSelectedEmployer] = useState<string | null>(employerId || null);
 
-  // Load employerId from session
-  useEffect(() => {
-    if (session?.user?.employerId) setEmployerId(session.user.employerId);
-  }, [session]);
-
-  // Sync status from URL
+  // ✅ Load initial job status from query params
   useEffect(() => {
     const statusParam = (searchParams.get("status") as JobStatus) || "all";
     setJobStatus(statusParam);
   }, [searchParams.toString()]);
 
-  // Fetch jobs and counts whenever employerId or jobStatus changes
+  // ✅ Fetch employer list (for admin)
   useEffect(() => {
-    if (!employerId) return;
+    if (showEmployerFilter) {
+      fetch("/api/employers") // <-- You need this endpoint to return all employers
+        .then((res) => res.json())
+        .then((data) => setEmployerList(data))
+        .catch((err) => console.error("Error loading employers:", err));
+    }
+  }, [showEmployerFilter]);
 
+  // ✅ Fetch jobs when employerId or jobStatus changes
+  useEffect(() => {
     const fetchAllData = async () => {
       setLoading(true);
-      await fetchJobs(jobStatus, employerId);
+      await fetchJobs(jobStatus, selectedEmployer || undefined);
       await fetchJobCounts();
       setLoading(false);
     };
     fetchAllData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [employerId, jobStatus]);
+  }, [selectedEmployer, jobStatus]);
 
-const fetchJobCounts = async () => {
-  if (!employerId) return;
-  try {
-    const res = await fetch(`/api/job/counts/${employerId}`);
-    const data = await res.json();
-
-    setJobCounts({
-      all: data.totalJobs || 0,
-      active: data.activeJobs || 0,
-      expired: data.totalJobs - data.activeJobs || 0, // or compute based on your logic
-    });
-  } catch (err) {
-    console.error("Error fetching job counts:", err);
-  }
-};
-
-
-  // Modal handlers
-  const handleCreateJob = () => {
-    setEditJobData(null);
-    setModalShow(true);
-  };
-
-  const handleEditJob = (job: Job) => {
-    setEditJobData(job);
-    setModalShow(true);
-  };
-
-  const handleViewJob = (job: Job) => {
-    setSelectedJob(job);
-    setModalView(true);
-  };
-
-  const closeModal = () => setModalView(false);
-
-  const handleSaveJob = async (jobData: Partial<Job>) => {
-    if (!employerId) return;
-
-    if (editJobData) {
-      await updateJob({ ...editJobData, ...jobData });
-    } else {
-      await addJob({ ...jobData, employer_id: employerId });
+  // ✅ Count jobs
+  const fetchJobCounts = async () => {
+    try {
+      const endpoint = selectedEmployer
+        ? `/api/job/counts/${selectedEmployer}`
+        : `/api/job/counts`; // admin all jobs
+      const res = await fetch(endpoint);
+      const data = await res.json();
+      setJobCounts({
+        all: data.totalJobs || 0,
+        active: data.activeJobs || 0,
+        expired: (data.totalJobs || 0) - (data.activeJobs || 0),
+      });
+    } catch (err) {
+      console.error("Error fetching job counts:", err);
     }
-
-    setModalShow(false);
-    await fetchJobs(jobStatus, employerId);
-    await fetchJobCounts();
-  };
-
-  const handleDeleteJob = async (jobId: number | string) => {
-    if (!employerId) return;
-    await deleteJob(jobId);
-    await fetchJobs(jobStatus, employerId);
-    await fetchJobCounts();
   };
 
   const handleStatusChange = (status: JobStatus) => {
     setJobStatus(status);
-    router.push(`/employer/job/manage-jobs?status=${status}`);
+    router.push(`${baseUrl}?status=${status}`);
   };
 
-  if (!session || !employerId) {
-    return (
-      <EmployerLayout>
-        <div className="content">Loading session...</div>
-      </EmployerLayout>
-    );
-  }
+  const handleSaveJob = async (jobData: Partial<Job>) => {
+    const targetEmployer = selectedEmployer || employerId;
+    if (!targetEmployer) return;
+
+    if (editJobData) {
+      await updateJob({ ...editJobData, ...jobData });
+    } else {
+      await addJob({ ...jobData, employer_id: targetEmployer });
+    }
+
+    setModalShow(false);
+    await fetchJobs(jobStatus, targetEmployer);
+    await fetchJobCounts();
+  };
 
   return (
-    <EmployerLayout>
+    <Layout>
       <div className="content">
         <h2>Manage Jobs</h2>
 
         <div className="d-flex align-items-center mb-3">
-          <Button variant="primary" onClick={handleCreateJob} className="me-3">
+          <Button variant="primary" onClick={() => setModalShow(true)} className="me-3">
             Create Job
           </Button>
 
-          <Dropdown className="m-1">
+          <Dropdown className="me-3">
             <Dropdown.Toggle variant="secondary">
               {jobStatus === "all"
                 ? "All Jobs"
@@ -151,6 +130,24 @@ const fetchJobCounts = async () => {
               </Dropdown.Item>
             </Dropdown.Menu>
           </Dropdown>
+
+          {/* ✅ Only show for admin */}
+          {showEmployerFilter && (
+            <Form.Select
+              value={selectedEmployer || ""}
+              onChange={(e) =>
+                setSelectedEmployer(e.target.value === "" ? null : e.target.value)
+              }
+              style={{ width: "250px" }}
+            >
+              <option value="">All Employers</option>
+              {employerList.map((emp) => (
+                <option key={emp.id} value={emp.id}>
+                  {emp.company_name || emp.name}
+                </option>
+              ))}
+            </Form.Select>
+          )}
         </div>
 
         {loading ? (
@@ -158,13 +155,19 @@ const fetchJobCounts = async () => {
         ) : (
           <JobList
             jobs={jobs}
-            onDelete={handleDeleteJob}
-            onEdit={handleEditJob}
-            onView={handleViewJob}
+            onDelete={deleteJob}
+            onEdit={(job) => {
+              setEditJobData(job);
+              setModalShow(true);
+            }}
+            onView={(job) => {
+              setSelectedJob(job);
+              setModalView(true);
+            }}
           />
         )}
 
-        {/* Job Form Modal */}
+        {/* ✅ Create/Edit Modal */}
         <Modal show={modalShow} onHide={() => setModalShow(false)} size="lg">
           <Modal.Header closeButton>
             <Modal.Title>{editJobData ? "Edit Job" : "Create Job"}</Modal.Title>
@@ -174,36 +177,29 @@ const fetchJobCounts = async () => {
               onSubmit={handleSaveJob}
               initialData={editJobData}
               setModalShow={setModalShow}
-              fetchJobs={() => fetchJobs(jobStatus, employerId)}
             />
           </Modal.Body>
         </Modal>
 
-        {/* Job View Modal */}
-        <Modal show={modalView} onHide={closeModal} size="lg">
+        {/* ✅ View Modal */}
+        <Modal show={modalView} onHide={() => setModalView(false)} size="lg">
           <Modal.Header closeButton>
             <Modal.Title>Job Details</Modal.Title>
           </Modal.Header>
           <Modal.Body>
             {selectedJob ? (
-              <div>
+              <>
                 <h5>{selectedJob.title}</h5>
                 <p>{selectedJob.description}</p>
-                <p>
-                  <strong>Salary:</strong> {selectedJob.salary_from} - {selectedJob.salary_to}
-                </p>
-                <p>
-                  <strong>Location:</strong> {selectedJob.region}, {selectedJob.state}, {selectedJob.country}
-                </p>
-              </div>
+              </>
             ) : (
               <p>No job selected.</p>
             )}
           </Modal.Body>
         </Modal>
       </div>
-    </EmployerLayout>
+    </Layout>
   );
 };
 
-export default JobManagement;
+export default JobManager;

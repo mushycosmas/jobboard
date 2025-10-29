@@ -54,9 +54,9 @@ const AdminSidebar = () => {
           </Accordion.Header>
           <Accordion.Body>
             <div className="pb-1">
-              <Link href="/admin/manage-jobs">Post a job</Link>
+              <Link href="/admin/manage-jobs">Manage Jobs</Link>
             </div>
-            <div className="pb-1">
+            {/* <div className="pb-1">
               <Link href="/admin/job/lists">List of jobs (123)</Link>
             </div>
             <div className="pb-1">
@@ -64,7 +64,7 @@ const AdminSidebar = () => {
             </div>
             <div className="pb-1">
               <Link href="/admin/post-job">Expired jobs (23)</Link>
-            </div>
+            </div> */}
           </Accordion.Body>
         </Accordion.Item>
 

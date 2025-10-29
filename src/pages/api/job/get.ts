@@ -11,22 +11,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     let { status = "all", employer_id } = req.query;
 
     // Convert employer_id from string to number if provided
-    employer_id = employer_id && employer_id !== "null" ? Number(employer_id) : null;
+    const employerIdNum = employer_id && employer_id !== "null" ? Number(employer_id) : null;
 
-    // Base query
+    // Base SQL query
     let query = `
       SELECT 
         j.*,
         e.company_name,
         e.logo,
-        r.name,
-        c.name,
+        r.name AS region_name,
+        c.name AS country_name,
         GROUP_CONCAT(DISTINCT jc.category_id) AS category_ids,
         GROUP_CONCAT(DISTINCT cat.industry_name) AS category_names,
         GROUP_CONCAT(DISTINCT js.skill_id) AS skill_ids,
         GROUP_CONCAT(DISTINCT s.skill_name) AS skill_names,
         GROUP_CONCAT(DISTINCT jcu.culture_id) AS culture_ids,
-        GROUP_CONCAT(DISTINCT cu.culture_name) AS culture_names
+        GROUP_CONCAT(DISTINCT cu.name) AS culture_names
       FROM jobs j
       LEFT JOIN employers e ON j.employer_id = e.id
       LEFT JOIN regions r ON j.region_id = r.id
@@ -42,21 +42,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const params: any[] = [];
 
-    if (employer_id) {
-      query += ` AND j.employer_id = ?`;
-      params.push(employer_id);
+    if (employerIdNum) {
+      query += " AND j.employer_id = ?";
+      params.push(employerIdNum);
     }
 
     if (status === "active") {
-      query += ` AND j.expired_date > NOW()`;
+      query += " AND j.expired_date > NOW()";
     } else if (status === "expired") {
-      query += ` AND j.expired_date < NOW()`;
+      query += " AND j.expired_date < NOW()";
     }
 
-    query += ` GROUP BY j.id ORDER BY j.posting_date DESC LIMIT 20;`;
+    query += " GROUP BY j.id ORDER BY j.posting_date DESC LIMIT 20";
 
+    // Execute query
     const [results] = await db.query(query, params);
 
+    // Map results and split comma-separated fields
     const jobs = (results as any[]).map((job) => ({
       ...job,
       category_ids: job.category_ids ? job.category_ids.split(",") : [],
