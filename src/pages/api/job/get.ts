@@ -21,6 +21,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         e.logo,
         r.name AS region_name,
         c.name AS country_name,
+        jt.name AS job_type_name,
+        j.job_type_id,
         GROUP_CONCAT(DISTINCT jc.category_id) AS category_ids,
         GROUP_CONCAT(DISTINCT cat.industry_name) AS category_names,
         GROUP_CONCAT(DISTINCT js.skill_id) AS skill_ids,
@@ -31,6 +33,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       LEFT JOIN employers e ON j.employer_id = e.id
       LEFT JOIN regions r ON j.region_id = r.id
       LEFT JOIN countries c ON r.country_id = c.id
+      LEFT JOIN job_types jt ON j.job_type_id = jt.id
       LEFT JOIN job_categories jc ON j.id = jc.job_id
       LEFT JOIN industries cat ON jc.category_id = cat.id
       LEFT JOIN job_skills js ON j.id = js.job_id
@@ -67,6 +70,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       skill_names: job.skill_names ? job.skill_names.split(",") : [],
       culture_ids: job.culture_ids ? job.culture_ids.split(",") : [],
       culture_names: job.culture_names ? job.culture_names.split(",") : [],
+      job_type_id: job.job_type_id || null,
+      job_type_name: job.job_type_name || "",
     }));
 
     return res.status(200).json({ jobs });

@@ -10,15 +10,18 @@ const JobCard = ({ job }) => {
     sessionStorage.setItem(`job-${job.slug}`, JSON.stringify(job));
   };
 
+  // Fix logo URL
   const logoSrc = job.logo
-    ? `http://localhost:4000${job.logo}`
+    ? job.logo.startsWith('http') // full URL
+      ? job.logo
+      : `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000'}/uploads/${job.logo}`
     : 'https://via.placeholder.com/100';
 
-  const jobType = job.job_type || 'Full-time';
+  const jobType = job.job_type_name || 'Full-time';
 
   const jobTypeStyle = {
     padding: '0.4rem 0.8rem',
-    backgroundColor: jobType === 'Full-time' ? '#28a745' : '#007bff',
+    backgroundColor: jobType.toLowerCase() === 'full-time' ? '#28a745' : '#007bff',
     color: '#fff',
     borderRadius: '25px',
     fontSize: '0.8rem',

@@ -29,21 +29,21 @@ const JobForm: React.FC<JobFormProps> = ({ setModalShow, fetchJobs, initialData 
     salary_from: "",
     salary_to: "",
     skill_ids: [] as string[],
-    type_ids: [] as string[],
+    job_type_id: "", // single select
     category_ids: [] as string[],
     culture_ids: [] as string[],
     summary: "",
     description: "",
-    expired_date: "",
     posting_date: "",
+    expired_date: "",
     experience_id: "",
     position_level_id: "",
-    jobAutoRenew: "0",
+    gender: "",
+    job_education: "",
     applyOnline: false,
     url: "",
     emailAddress: "demo1@aynsoft.com",
-    gender: "",
-    job_education: "",
+    jobAutoRenew: "0",
   });
 
   // Populate form when editing
@@ -51,10 +51,10 @@ const JobForm: React.FC<JobFormProps> = ({ setModalShow, fetchJobs, initialData 
     if (initialData) {
       setFormData({
         ...initialData,
-        posting_date: initialData.posting_date ? initialData.posting_date.split("T")[0] : "",
-        expired_date: initialData.expired_date ? initialData.expired_date.split("T")[0] : "",
+        posting_date: initialData.posting_date?.split("T")[0] || "",
+        expired_date: initialData.expired_date?.split("T")[0] || "",
         skill_ids: initialData.skill_ids || [],
-        type_ids: initialData.type_ids || [],
+        job_type_id: initialData.job_type_id || "",
         category_ids: initialData.category_ids || [],
         culture_ids: initialData.culture_ids || [],
       });
@@ -67,20 +67,20 @@ const JobForm: React.FC<JobFormProps> = ({ setModalShow, fetchJobs, initialData 
     }
   }, [session]);
 
- const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-  const { name, value, type, checked } = e.target;
-  
-  if (type === "checkbox") {
-    setFormData({ ...formData, [name]: checked });
-  } else if (name === "jobAutoRenew") {
-    // Convert to number
-    setFormData({ ...formData, [name]: parseInt(value, 10) });
-  } else {
-    setFormData({ ...formData, [name]: value });
-  }
-};
+  // Generic change handler
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value, type, checked } = e.target;
 
+    if (type === "checkbox") {
+      setFormData({ ...formData, [name]: checked });
+    } else if (name === "jobAutoRenew") {
+      setFormData({ ...formData, [name]: parseInt(value, 10) });
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
+  };
 
+  // Multi-select handler
   const handleMultiSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const { name, options } = e.target;
     const selectedValues = Array.from(options)
@@ -121,6 +121,7 @@ const JobForm: React.FC<JobFormProps> = ({ setModalShow, fetchJobs, initialData 
 
   return (
     <Form onSubmit={handleSubmit}>
+
       {/* Job Title */}
       <Form.Group as={Row} className="mb-2">
         <Form.Label column sm={3}>Job Title:</Form.Label>
@@ -152,11 +153,23 @@ const JobForm: React.FC<JobFormProps> = ({ setModalShow, fetchJobs, initialData 
         </Col>
       </Form.Group>
 
+      {/* Job Type (single select) */}
+      <Form.Group as={Row} className="mb-2">
+        <Form.Label column sm={3}>Job Type:</Form.Label>
+        <Col sm={9}>
+          <Form.Select name="job_type_id" value={formData.job_type_id} onChange={handleChange} required>
+            <option value="">Select Job Type</option>
+            {jobTypes.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+          </Form.Select>
+        </Col>
+      </Form.Group>
+
       {/* Multi-selects */}
-      {[{ name: "skill_ids", label: "Skills", data: skills },
-        { name: "type_ids", label: "Job Types", data: jobTypes },
+      {[
+        { name: "skill_ids", label: "Skills", data: skills },
         { name: "category_ids", label: "Categories", data: categories },
-        { name: "culture_ids", label: "Cultures", data: cultures }].map(({ name, label, data }) => (
+        { name: "culture_ids", label: "Cultures", data: cultures },
+      ].map(({ name, label, data }) => (
         <Form.Group as={Row} className="mb-2" key={name}>
           <Form.Label column sm={3}>{label}:</Form.Label>
           <Col sm={9}>
@@ -193,7 +206,7 @@ const JobForm: React.FC<JobFormProps> = ({ setModalShow, fetchJobs, initialData 
         </Col>
       </Form.Group>
 
-      {/* Experience & Level */}
+      {/* Experience & Position Level */}
       <Form.Group as={Row} className="mb-2">
         <Form.Label column sm={3}>Experience Level:</Form.Label>
         <Col sm={9}>
@@ -280,25 +293,23 @@ const JobForm: React.FC<JobFormProps> = ({ setModalShow, fetchJobs, initialData 
       </Form.Group>
 
       {/* Job Auto Renew */}
-      {/* Job Auto Renew */}
-<Form.Group as={Row} className="mb-3">
-  <Form.Label column sm={3}>Job Auto Renew:</Form.Label>
-  <Col sm={9}>
-    <Form.Select
-      name="jobAutoRenew"
-      value={formData.jobAutoRenew}
-      onChange={handleChange}
-    >
-      <option value="0">None</option>
-      <option value="3">3 Days</option>
-      <option value="7">7 Days</option>
-      <option value="14">14 Days</option>
-      <option value="21">21 Days</option>
-      <option value="28">28 Days</option>
-    </Form.Select>
-  </Col>
-</Form.Group>
-
+      <Form.Group as={Row} className="mb-3">
+        <Form.Label column sm={3}>Job Auto Renew:</Form.Label>
+        <Col sm={9}>
+          <Form.Select
+            name="jobAutoRenew"
+            value={formData.jobAutoRenew}
+            onChange={handleChange}
+          >
+            <option value="0">None</option>
+            <option value="3">3 Days</option>
+            <option value="7">7 Days</option>
+            <option value="14">14 Days</option>
+            <option value="21">21 Days</option>
+            <option value="28">28 Days</option>
+          </Form.Select>
+        </Col>
+      </Form.Group>
 
       <Button type="submit">Submit Job</Button>
     </Form>

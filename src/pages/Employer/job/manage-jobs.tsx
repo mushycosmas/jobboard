@@ -1,29 +1,23 @@
 "use client";
+
 import React, { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Modal, Button, Dropdown, Form } from "react-bootstrap";
 import JobList from "@/components/Job/JobList";
 import JobForm from "@/components/Job/JobForm";
 import useJobs, { Job } from "@/hooks/useJobs";
+import EmployerLayout from "@/Layouts/EmployerLayout";
+import { useSession } from "next-auth/react";
 
 type JobStatus = "all" | "active" | "expired";
 
-interface JobManagerProps {
-  employerId?: string | null; // from session (for employer)
-  layout: React.ComponentType<{ children: React.ReactNode }>;
-  baseUrl: string; // e.g. "/employer/job/manage-jobs"
-  showEmployerFilter?: boolean; // for admin
-}
-
-const JobManager: React.FC<JobManagerProps> = ({
-  employerId,
-  layout: Layout,
-  baseUrl,
+const JobManager: React.FC<{ showEmployerFilter?: boolean }> = ({
   showEmployerFilter = false,
 }) => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { jobs, fetchJobs, addJob, updateJob, deleteJob } = useJobs();
+  const { jobs, addJob, updateJob, deleteJob } = useJobs();
+  const { data: session } = useSession();
 
   const [modalShow, setModalShow] = useState(false);
   const [modalView, setModalView] = useState(false);
@@ -31,82 +25,114 @@ const JobManager: React.FC<JobManagerProps> = ({
   const [editJobData, setEditJobData] = useState<Job | null>(null);
   const [jobStatus, setJobStatus] = useState<JobStatus>("all");
   const [loading, setLoading] = useState(false);
-  const [jobCounts, setJobCounts] = useState({ active: 0, expired: 0, all: 0 });
+  const [jobCounts, setJobCounts] = useState({ all: 0, active: 0, expired: 0 });
   const [employerList, setEmployerList] = useState<any[]>([]);
-  const [selectedEmployer, setSelectedEmployer] = useState<string | null>(employerId || null);
+  const [selectedEmployer, setSelectedEmployer] = useState<string | null>(null);
+  const [jobsData, setJobsData] = useState<Job[]>([]);
 
-  // ✅ Load initial job status from query params
+  const employerId = session?.user?.employerId ? String(session.user.employerId) : null;
+
+  // Load initial job status from query params
   useEffect(() => {
+    if (!searchParams) return;
     const statusParam = (searchParams.get("status") as JobStatus) || "all";
     setJobStatus(statusParam);
-  }, [searchParams.toString()]);
+  }, [searchParams]);
 
-  // ✅ Fetch employer list (for admin)
+  // Fetch employer list (for admin)
   useEffect(() => {
-    if (showEmployerFilter) {
-      fetch("/api/employers") // <-- You need this endpoint to return all employers
-        .then((res) => res.json())
-        .then((data) => setEmployerList(data))
-        .catch((err) => console.error("Error loading employers:", err));
-    }
+    if (!showEmployerFilter) return;
+    fetch("/api/employers")
+      .then((res) => res.json())
+      .then((data) => setEmployerList(data))
+      .catch((err) => console.error("Error loading employers:", err));
   }, [showEmployerFilter]);
 
-  // ✅ Fetch jobs when employerId or jobStatus changes
-  useEffect(() => {
-    const fetchAllData = async () => {
-      setLoading(true);
-      await fetchJobs(jobStatus, selectedEmployer || undefined);
-      await fetchJobCounts();
-      setLoading(false);
-    };
-    fetchAllData();
-  }, [selectedEmployer, jobStatus]);
+  // Fetch jobs and counts
+  const fetchAllData = async () => {
+    if (!employerId) return;
+    setLoading(true);
+    const targetEmployer = selectedEmployer || employerId;
 
-  // ✅ Count jobs
-  const fetchJobCounts = async () => {
     try {
-      const endpoint = selectedEmployer
-        ? `/api/job/counts/${selectedEmployer}`
-        : `/api/job/counts`; // admin all jobs
-      const res = await fetch(endpoint);
-      const data = await res.json();
+      // Fetch jobs
+      const resJobs = await fetch(`/api/job/get?status=${jobStatus}&employer_id=${targetEmployer}`);
+      const dataJobs = await resJobs.json();
+      setJobsData(dataJobs.jobs || []);
+
+      // Fetch counts
+      const resCounts = await fetch(`/api/job/counts/${targetEmployer}`);
+      const dataCounts = await resCounts.json();
       setJobCounts({
-        all: data.totalJobs || 0,
-        active: data.activeJobs || 0,
-        expired: (data.totalJobs || 0) - (data.activeJobs || 0),
+        all: Number(dataCounts.totalJobs) || 0,
+        active: Number(dataCounts.activeJobs) || 0,
+        expired: (Number(dataCounts.totalJobs) - Number(dataCounts.activeJobs)) || 0,
       });
     } catch (err) {
-      console.error("Error fetching job counts:", err);
+      console.error("Error fetching jobs or counts:", err);
+      setJobCounts({ all: 0, active: 0, expired: 0 });
+    } finally {
+      setLoading(false);
     }
   };
 
+  useEffect(() => {
+    fetchAllData();
+  }, [selectedEmployer, jobStatus, employerId]);
+
+  // Handle status change
   const handleStatusChange = (status: JobStatus) => {
     setJobStatus(status);
-    router.push(`${baseUrl}?status=${status}`);
+    const query = new URLSearchParams();
+    query.set("status", status);
+    router.replace(`/employer/job/manage-jobs?${query.toString()}`);
   };
 
+  // Handle save (create or edit)
   const handleSaveJob = async (jobData: Partial<Job>) => {
+    if (!employerId) return;
     const targetEmployer = selectedEmployer || employerId;
-    if (!targetEmployer) return;
 
-    if (editJobData) {
-      await updateJob({ ...editJobData, ...jobData });
-    } else {
-      await addJob({ ...jobData, employer_id: targetEmployer });
+    try {
+      if (editJobData) {
+        await updateJob({ ...editJobData, ...jobData });
+      } else {
+        await addJob({ ...jobData, employer_id: targetEmployer });
+      }
+
+      setModalShow(false);
+      setEditJobData(null);
+
+      // Refresh jobs & counts
+      await fetchAllData();
+    } catch (err) {
+      console.error("Error saving job:", err);
     }
-
-    setModalShow(false);
-    await fetchJobs(jobStatus, targetEmployer);
-    await fetchJobCounts();
   };
+
+  // Handle delete
+  const handleDeleteJob = async (jobId: number) => {
+    try {
+      await deleteJob(jobId);
+      await fetchAllData(); // refresh after deletion
+    } catch (err) {
+      console.error("Error deleting job:", err);
+    }
+  };
+
+  if (!employerId) return <div>Please log in as an employer to manage jobs.</div>;
 
   return (
-    <Layout>
+    <EmployerLayout>
       <div className="content">
         <h2>Manage Jobs</h2>
 
         <div className="d-flex align-items-center mb-3">
-          <Button variant="primary" onClick={() => setModalShow(true)} className="me-3">
+          <Button
+            variant="primary"
+            onClick={() => setModalShow(true)}
+            className="me-3"
+          >
             Create Job
           </Button>
 
@@ -131,7 +157,6 @@ const JobManager: React.FC<JobManagerProps> = ({
             </Dropdown.Menu>
           </Dropdown>
 
-          {/* ✅ Only show for admin */}
           {showEmployerFilter && (
             <Form.Select
               value={selectedEmployer || ""}
@@ -142,7 +167,7 @@ const JobManager: React.FC<JobManagerProps> = ({
             >
               <option value="">All Employers</option>
               {employerList.map((emp) => (
-                <option key={emp.id} value={emp.id}>
+                <option key={emp.id} value={String(emp.id)}>
                   {emp.company_name || emp.name}
                 </option>
               ))}
@@ -154,8 +179,8 @@ const JobManager: React.FC<JobManagerProps> = ({
           <div>Loading...</div>
         ) : (
           <JobList
-            jobs={jobs}
-            onDelete={deleteJob}
+            jobs={jobsData}
+            onDelete={handleDeleteJob}
             onEdit={(job) => {
               setEditJobData(job);
               setModalShow(true);
@@ -167,7 +192,7 @@ const JobManager: React.FC<JobManagerProps> = ({
           />
         )}
 
-        {/* ✅ Create/Edit Modal */}
+        {/* Create/Edit Modal */}
         <Modal show={modalShow} onHide={() => setModalShow(false)} size="lg">
           <Modal.Header closeButton>
             <Modal.Title>{editJobData ? "Edit Job" : "Create Job"}</Modal.Title>
@@ -181,7 +206,7 @@ const JobManager: React.FC<JobManagerProps> = ({
           </Modal.Body>
         </Modal>
 
-        {/* ✅ View Modal */}
+        {/* View Modal */}
         <Modal show={modalView} onHide={() => setModalView(false)} size="lg">
           <Modal.Header closeButton>
             <Modal.Title>Job Details</Modal.Title>
@@ -198,7 +223,7 @@ const JobManager: React.FC<JobManagerProps> = ({
           </Modal.Body>
         </Modal>
       </div>
-    </Layout>
+    </EmployerLayout>
   );
 };
 

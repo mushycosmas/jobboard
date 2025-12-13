@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import RecruiterCard from './RecruiterCard'; // Import the RecruiterCard component
+import RecruiterCard from './RecruiterCard';
 import { Container, Spinner } from 'react-bootstrap';
-import { ChevronLeft, ChevronRight } from 'lucide-react'; // Icons for arrows
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const CACHE_DURATION = 60 * 60 * 1000; // 1 hour
 
@@ -29,19 +29,12 @@ const FeaturedRecruiters = () => {
       }
 
       try {
-        // Fetch from your Next.js API route
-        const res = await fetch('/api/employers'); // <-- Adjust path if needed
-        if (!res.ok) {
-          throw new Error('Failed to fetch recruiters');
-        }
+        const res = await fetch('/api/employers'); // Your API route
+        if (!res.ok) throw new Error('Failed to fetch recruiters');
         const data = await res.json();
 
         setRecruiters(data);
-
-        localStorage.setItem(
-          cacheKey,
-          JSON.stringify({ data, timestamp: Date.now() })
-        );
+        localStorage.setItem(cacheKey, JSON.stringify({ data, timestamp: Date.now() }));
       } catch (error) {
         console.error('Error fetching recruiters:', error);
       } finally {
@@ -66,9 +59,7 @@ const FeaturedRecruiters = () => {
     <Container>
       <div className="row text-center mt-5">
         <div className="col-lg-12 d-flex align-items-center mb-3">
-          <h2 className="m-0 m-font-size1 mpt-20" style={{ fontSize: '30px' }}>
-            Featured Recruiters
-          </h2>
+          <h2 style={{ fontSize: '30px' }}>Featured Recruiters</h2>
         </div>
 
         {loading ? (
@@ -77,11 +68,7 @@ const FeaturedRecruiters = () => {
           </div>
         ) : (
           <div className="scroll-container">
-            <button
-              className="scroll-button left"
-              onClick={() => scroll('left')}
-              aria-label="Scroll left"
-            >
+            <button className="scroll-button left" onClick={() => scroll('left')}>
               <ChevronLeft size={24} />
             </button>
 
@@ -91,24 +78,19 @@ const FeaturedRecruiters = () => {
                   key={recruiter.id}
                   imgSrc={recruiter.logo}
                   altText={recruiter.company_name}
-                  link={`employer/profile/${recruiter.id}`}
+                  link={`/employer/profile/${recruiter.id}`}
                   title={recruiter.company_name}
                 />
               ))}
             </div>
 
-            <button
-              className="scroll-button right"
-              onClick={() => scroll('right')}
-              aria-label="Scroll right"
-            >
+            <button className="scroll-button right" onClick={() => scroll('right')}>
               <ChevronRight size={24} />
             </button>
           </div>
         )}
       </div>
 
-      {/* CSS styles */}
       <style jsx>{`
         .scroll-container {
           display: flex;
@@ -116,7 +98,6 @@ const FeaturedRecruiters = () => {
           position: relative;
           overflow: hidden;
         }
-
         .scroll-button {
           background: none;
           border: none;
@@ -131,30 +112,25 @@ const FeaturedRecruiters = () => {
           color: #555;
           transition: color 0.3s;
         }
-
         .scroll-button:hover {
           color: #000;
         }
-
         .scroll-button.left {
           left: 0;
         }
-
         .scroll-button.right {
           right: 0;
         }
-
         .recruiter-list {
           display: flex;
           overflow-x: auto;
           scroll-behavior: smooth;
-          scrollbar-width: none; /* Firefox */
+          scrollbar-width: none;
+          padding-bottom: 10px;
         }
-
         .recruiter-list::-webkit-scrollbar {
-          display: none; /* Chrome, Safari, Edge */
+          display: none;
         }
-
         .recruiter-list > * {
           flex: 0 0 auto;
           margin-right: 20px;

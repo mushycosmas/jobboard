@@ -1,10 +1,11 @@
+// File: src/pages/api/dashboard/stats.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import { db } from "@/lib/db";
 import { RowDataPacket } from "mysql2";
 
-// Dashboard stats function
-const getDashboardStats = async (employer_id: string) => {
-  if (!employer_id) throw new Error("Employer ID is required");
+// Function to fetch dashboard stats
+const getDashboardStats = async (employerId: string) => {
+  if (!employerId) throw new Error("Employer ID is required");
 
   try {
     const queries = {
@@ -14,9 +15,10 @@ const getDashboardStats = async (employer_id: string) => {
       selectedApplicants: `SELECT COUNT(*) AS count FROM applicant_applications WHERE employer_id = ? AND status = 'selected'`,
       totalViews: `SELECT SUM(view) AS count FROM jobs WHERE employer_id = ?`,
       totalJobsPosted: `SELECT COUNT(*) AS count FROM jobs WHERE employer_id = ?`,
-      totalCVsSearched: `SELECT COUNT(*) AS count FROM cv_search_logs WHERE employer_id = ?`
+      totalCVsSearched: `SELECT COUNT(*) AS count FROM cv_search_logs WHERE employer_id = ?`,
     };
 
+    // Run all queries in parallel
     const [
       [totalJobs],
       [activeJobs],
@@ -24,25 +26,26 @@ const getDashboardStats = async (employer_id: string) => {
       [selectedApplicants],
       [totalViews],
       [totalJobsPosted],
-      [totalCVsSearched]
+      [totalCVsSearched],
     ] = await Promise.all([
-      db.query<RowDataPacket[]>(queries.totalJobs, [employer_id]),
-      db.query<RowDataPacket[]>(queries.activeJobs, [employer_id]),
-      db.query<RowDataPacket[]>(queries.totalApplicants, [employer_id]),
-      db.query<RowDataPacket[]>(queries.selectedApplicants, [employer_id]),
-      db.query<RowDataPacket[]>(queries.totalViews, [employer_id]),
-      db.query<RowDataPacket[]>(queries.totalJobsPosted, [employer_id]),
-      db.query<RowDataPacket[]>(queries.totalCVsSearched, [employer_id])
+      db.query<RowDataPacket[]>(queries.totalJobs, [employerId]),
+      db.query<RowDataPacket[]>(queries.activeJobs, [employerId]),
+      db.query<RowDataPacket[]>(queries.totalApplicants, [employerId]),
+      db.query<RowDataPacket[]>(queries.selectedApplicants, [employerId]),
+      db.query<RowDataPacket[]>(queries.totalViews, [employerId]),
+      db.query<RowDataPacket[]>(queries.totalJobsPosted, [employerId]),
+      db.query<RowDataPacket[]>(queries.totalCVsSearched, [employerId]),
     ]);
 
     return {
       totalJobs: totalJobs[0]?.count || 0,
       activeJobs: activeJobs[0]?.count || 0,
+      expiredJobs: (totalJobs[0]?.count || 0) - (activeJobs[0]?.count || 0),
       totalApplicants: totalApplicants[0]?.count || 0,
       selectedApplicants: selectedApplicants[0]?.count || 0,
       totalViews: totalViews[0]?.count || 0,
       totalJobsPosted: totalJobsPosted[0]?.count || 0,
-      totalCVsSearched: totalCVsSearched[0]?.count || 0
+      totalCVsSearched: totalCVsSearched[0]?.count || 0,
     };
   } catch (error: any) {
     console.error("Error fetching dashboard stats:", error.message);
@@ -50,7 +53,7 @@ const getDashboardStats = async (employer_id: string) => {
   }
 };
 
-// API Route Handler
+// API route handler
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -63,8 +66,8 @@ export default async function handler(
 
   try {
     const stats = await getDashboardStats(employerId);
-    res.status(200).json(stats);
-  } catch (error) {
-    res.status(500).json({ error: "Failed to fetch dashboard stats" });
+    return res.status(200).json(stats);
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message || "Failed to fetch dashboard stats" });
   }
 }

@@ -2,18 +2,17 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { db } from "@/lib/db";
 
-// Utility to generate slug
-const generateSlug = (text: string) => {
-  return text
+// Utility: generate a slug from text
+const generateSlug = (text: string) =>
+  text
     .toString()
     .toLowerCase()
     .trim()
-    .replace(/\s+/g, "-")          // Replace spaces with -
-    .replace(/[^\w\-]+/g, "")      // Remove all non-word chars
-    .replace(/\-\-+/g, "-");       // Replace multiple - with single -
-};
+    .replace(/\s+/g, "-") // spaces → hyphen
+    .replace(/[^\w\-]+/g, "") // remove non-word chars
+    .replace(/\-\-+/g, "-"); // collapse multiple hyphens
 
-// Generate unique slug by checking the DB
+// Generate a unique slug by checking DB
 const generateUniqueSlug = async (baseSlug: string) => {
   let slug = baseSlug;
   let counter = 1;
@@ -37,42 +36,40 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const {
       employer_id,
       title,
-      region_id,
-      address,
-      salary_from,
-      salary_to,
+      region_id = null,
+      address = null,
+      salary_from = null,
+      salary_to = null,
       skill_ids = [],
-      type_ids = [],
+      job_type_id = null,
       category_ids = [],
       culture_ids = [],
-      summary,
-      description,
-      posting_date,
-      expired_date,
-      experience_id,
-      position_level_id,
-      gender,
-      applyOnline,
-      url,
-      emailAddress,
-      jobAutoRenew,
+      summary = null,
+      description = null,
+      posting_date = null,
+      expired_date = null,
+      experience_id = null,
+      position_level_id = null,
+      gender = null,
+      applyOnline = false,
+      url = null,
+      emailAddress = null,
+      jobAutoRenew = 0,
     } = req.body;
 
     if (!employer_id || !title) {
       return res.status(400).json({ error: "Employer ID and title are required" });
     }
 
-    // Fetch employer company name
+    // Get employer company name
     const [employerRows] = await db.query(
       "SELECT company_name FROM employers WHERE id = ?",
       [employer_id]
     );
     const company_name = (employerRows as any)[0]?.company_name;
-    if (!company_name) {
-      return res.status(404).json({ error: "Employer not found" });
-    }
+    if (!company_name) return res.status(404).json({ error: "Employer not found" });
 
-    // Fetch region and country name
+    // Get region & country names
     let regionName = "";
     let countryName = "";
     if (region_id) {
@@ -83,7 +80,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
          WHERE r.id = ?`,
         [region_id]
       );
-
       const regionData = (regionRows as any)[0];
       if (regionData) {
         regionName = regionData.region_name || "";
@@ -91,50 +87,50 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
-    // Generate unique slug combining title + company_name + region + country
+    // Generate unique slug
     const baseSlug = generateSlug([title, company_name, regionName, countryName].filter(Boolean).join(" "));
     const slug = await generateUniqueSlug(baseSlug);
 
-    // Insert into jobs table
+    // Insert job
     const [result] = await db.query(
-      `INSERT INTO jobs 
-        (employer_id, title, region_id, address, salary_from, salary_to, summary, description, posting_date, expired_date, experience_id, position_level_id, gender, applyOnline, url, emailAddress, jobAutoRenew, slug)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO jobs
+      (employer_id, title, region_id, address, job_type_id, salary_from, salary_to, summary, description,
+       posting_date, expired_date, experience_id, position_level_id, gender, applyOnline, url, emailAddress, jobAutoRenew, slug)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         employer_id,
         title,
-        region_id || null,
-        address || null,
-        salary_from || null,
-        salary_to || null,
-        summary || null,
-        description || null,
+        region_id,
+        address,
+        job_type_id,
+        salary_from,
+        salary_to,
+        summary,
+        description,
         posting_date ? new Date(posting_date) : null,
         expired_date ? new Date(expired_date) : null,
-        experience_id || null,
-        position_level_id || null,
-        gender || null,
+        experience_id,
+        position_level_id,
+        gender,
         applyOnline ? 1 : 0,
-        url || null,
-        emailAddress || null,
-        jobAutoRenew ? 1 : 0,
+        url,
+        emailAddress,
+        jobAutoRenew || 0,
         slug,
       ]
     );
 
     const jobId = (result as any).insertId;
 
-    // Helper function for many-to-many inserts
+    // Insert many-to-many relations
     const insertManyToMany = async (table: string, column: string, ids: any[]) => {
-      if (!ids.length) return;
-      const values = ids.map(() => "(?, ?)").join(", ");
-      const params: any[] = ids.flatMap(id => [jobId, id]);
+      if (!ids?.length) return;
+      const values = ids.map(() => `(?, ?)`).join(", ");
+      const params = ids.flatMap((id) => [jobId, id]);
       await db.query(`INSERT INTO ${table} (job_id, ${column}) VALUES ${values}`, params);
     };
 
-    // Insert relations safely
     await insertManyToMany("job_skills", "skill_id", skill_ids);
-    await insertManyToMany("job_types", "type_id", type_ids);
     await insertManyToMany("job_categories", "category_id", category_ids);
     await insertManyToMany("job_cultures", "culture_id", culture_ids);
 

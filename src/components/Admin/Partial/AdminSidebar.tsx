@@ -50,7 +50,7 @@ const AdminSidebar = () => {
         {/* Job Posting */}
         <Accordion.Item eventKey="1">
           <Accordion.Header>
-            <i className="bi bi-briefcase-fill me-2" style={{ color: "#808080" }}></i> Job Posting
+            <i className="bi bi-briefcase-fill me-2" style={{ color: "#808080" }}></i> Jobs
           </Accordion.Header>
           <Accordion.Body>
             <div className="pb-1">

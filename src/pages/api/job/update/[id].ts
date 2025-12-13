@@ -28,6 +28,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       title,
       region_id,
       address,
+      job_type_id, // <-- single value
       salary_from,
       salary_to,
       summary,
@@ -41,10 +42,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       url,
       emailAddress,
       jobAutoRenew,
-      skill_ids = [],
-      type_ids = [],
-      category_ids = [],
-      culture_ids = [],
     } = req.body;
 
     // Fetch region name for slug (optional)
@@ -59,16 +56,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Update the main job data
     await db.query(
-      `UPDATE jobs SET 
-        title = ?, slug = ?, region_id = ?, address = ?, salary_from = ?, salary_to = ?, summary = ?, description = ?, 
-        posting_date = ?, expired_date = ?, experience_id = ?, position_level_id = ?, gender = ?, 
-        applyOnline = ?, url = ?, emailAddress = ?, jobAutoRenew = ?
+      `UPDATE jobs SET
+        title = ?, slug = ?, region_id = ?, address = ?, job_type_id = ?, salary_from = ?, salary_to = ?, 
+        summary = ?, description = ?, posting_date = ?, expired_date = ?, experience_id = ?, 
+        position_level_id = ?, gender = ?, applyOnline = ?, url = ?, emailAddress = ?, jobAutoRenew = ?
       WHERE id = ?`,
       [
         title || null,
         slug,
         region_id || null,
         address || null,
+        job_type_id || null, // <-- directly store single type
         salary_from || null,
         salary_to || null,
         summary || null,
@@ -85,20 +83,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         jobId,
       ]
     );
-
-    // Helper to update many-to-many relations
-    const updateManyToMany = async (table: string, column: string, ids: any[]) => {
-      await db.query(`DELETE FROM ${table} WHERE job_id = ?`, [jobId]);
-      if (!ids.length) return;
-      const values = ids.map(() => "(?, ?)").join(", ");
-      const params = ids.flatMap((id) => [jobId, id]);
-      await db.query(`INSERT INTO ${table} (job_id, ${column}) VALUES ${values}`, params);
-    };
-
-    await updateManyToMany("job_skills", "skill_id", skill_ids);
-    await updateManyToMany("job_types", "type_id", type_ids);
-    await updateManyToMany("job_categories", "category_id", category_ids);
-    await updateManyToMany("job_cultures", "culture_id", culture_ids);
 
     return res.status(200).json({ message: "Job updated successfully", jobId, slug });
   } catch (error: any) {
