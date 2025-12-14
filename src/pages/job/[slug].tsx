@@ -60,7 +60,7 @@ const JobDetailPage = ({ job }: InferGetStaticPropsType<typeof getStaticProps>) 
         <link rel="canonical" href={`http://localhost:3000/job/${job.slug}`} />
       </Head>
 
-      <div className="container mt-4">
+      <div className="container ">
         <JobDetails job={job} />
       </div>
     </Layout>

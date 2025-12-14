@@ -1,7 +1,7 @@
 'use client'
 import React from 'react';
-import Header from '../components/Partial/Header';
-import Footer from '../components/Partial/Footer';
+import Header from './Partial/Header';
+import Footer from './Partial/Footer';
 
 const Layout = ({ children }) => {
   return (
