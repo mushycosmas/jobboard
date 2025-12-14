@@ -2,17 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button, Card, Col, Row, Container } from 'react-bootstrap';
-import {
-  FaBriefcase,
-  FaCalendarCheck,
-  FaList,
-  FaCog,
-  FaSave,
-  FaUsers,
-  FaPrint,
-  FaEye,
-} from 'react-icons/fa';
-import { useSession } from 'next-auth/react'; // assuming you are using next-auth
+import { FaBriefcase, FaCalendarCheck, FaList, FaCog, FaSave, FaUsers, FaPrint, FaEye } from 'react-icons/fa';
+import { useSession } from 'next-auth/react';
 
 interface JobDetailsProps {
   job: {
@@ -86,7 +77,14 @@ const JobDetails: React.FC<JobDetailsProps> = ({ job }) => {
       alert('Only logged-in applicants can apply for this job.');
       return;
     }
-    setShowTextBox(true);
+
+    if (job.apply_url) {
+      // Redirect to external apply URL
+      window.open(job.apply_url, '_blank');
+    } else {
+      // Show text box for cover letter
+      setShowTextBox(true);
+    }
   };
 
   const handleSaveJob = () => {
@@ -102,6 +100,7 @@ const JobDetails: React.FC<JobDetailsProps> = ({ job }) => {
       alert('Please write an application letter.');
       return;
     }
+    // You can call your API here to save the application
     alert('Application submitted successfully!');
     setShowTextBox(false);
     setLetter('');

@@ -6,12 +6,12 @@ import Select from 'react-select';
 import { UniversalDataContext } from '../context/UniversalDataContext';
 import AllJobList from './AllJobList';
 import JobPreview from './JobPreview';
-import { useRouter } from 'next/router';  // Use next/router instead
+import { useRouter } from 'next/router';
+import { useSession } from 'next-auth/react';
 
 const AllJobs = ({ jobs }) => {
-  const router = useRouter();  // Use useRouter hook to access route params
-  const { slug, id } = router.query;  // Retrieve slug and id from the query
-
+  const router = useRouter();
+  const { slug, id } = router.query;
   const { categories, jobTypes, skills, experiences, levels, states } = useContext(UniversalDataContext);
 
   const [isExpanded, setIsExpanded] = useState(false);
@@ -23,16 +23,22 @@ const AllJobs = ({ jobs }) => {
   const [selectedLevel, setSelectedLevel] = useState('');
   const [selectedSalary, setSelectedSalary] = useState('');
   const [selectedJob, setSelectedJob] = useState(null);
-
   const [filteredJobs, setFilteredJobs] = useState(jobs);
+  const [applicantId, setApplicantId] = useState<string | null>(null);
+  const [letter, setLetter] = useState('');
 
-  const formatForSelect = (data) => {
-    return data.map(item => ({
-      value: item.id,
-      label: item.name,
-    }));
-  };
+  const { data: session, status } = useSession();
 
+  // Check if user is authenticated and has applicantId
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user?.applicantId) {
+      setApplicantId(session.user.applicantId.toString());
+    } else {
+      setApplicantId(null);
+    }
+  }, [session, status]);
+
+  const formatForSelect = (data) => data.map(item => ({ value: item.id, label: item.name }));
   const skillsOptions = skills.length ? formatForSelect(skills) : [];
 
   const clearFilters = () => {
@@ -45,14 +51,10 @@ const AllJobs = ({ jobs }) => {
     setSelectedSalary('');
   };
 
-  // Update the selectedCategory when slug and id are available
   useEffect(() => {
     if (slug && id) {
-      // Find the category with the matching id
-      const matchedCategory = categories.find((category) => category.id.toString() === id);
-      if (matchedCategory) {
-        setSelectedCategory(matchedCategory.id.toString());
-      }
+      const matchedCategory = categories.find(category => category.id.toString() === id);
+      if (matchedCategory) setSelectedCategory(matchedCategory.id.toString());
     }
   }, [slug, id, categories]);
 
@@ -65,8 +67,8 @@ const AllJobs = ({ jobs }) => {
       const jobCategories = Array.isArray(job.category_ids)
         ? job.category_ids
         : job.category_ids ? job.category_ids.split(',').map(id => id.trim()) : [];
-      const jobExperiences = job.experience_id.toString();
-      const jobLevels = job.position_level_id.toString();
+      const jobExperiences = job.experience_id?.toString() || '';
+      const jobLevels = job.position_level_id?.toString() || '';
 
       const skillsMatch = selectedSkillIds.length
         ? selectedSkillIds.some(skillId => jobSkills.includes(skillId))
@@ -95,132 +97,83 @@ const AllJobs = ({ jobs }) => {
     jobs,
   ]);
 
+  // Apply logic for logged-in applicants
+  const handleApply = (job) => {
+    if (!applicantId) {
+      alert('Only logged-in applicants can apply for this job.');
+      return;
+    }
+    setSelectedJob({ ...job, showApplicationBox: true });
+  };
+
+  const handleSubmitApplication = () => {
+    if (!letter.trim()) {
+      alert('Please write an application letter.');
+      return;
+    }
+    alert('Application submitted successfully!');
+    setLetter('');
+    // Close application box
+    setSelectedJob({ ...selectedJob, showApplicationBox: false });
+  };
+
   return (
-    <Container style={{ marginTop: '70px', marginBottom: '0.1rem' }}>
+    <Container style={{ marginTop: '70px', marginBottom: '2rem' }}>
       {/* Filter Form */}
       <Row className="mb-1">
         <Col md={12}>
           <Form>
             <Card className="shadow-sm">
               <Card.Body>
-                {/* Default Row (Visible Always) */}
                 <Row className="align-items-center g-2 mb-3">
-                  {/* State */}
                   <Col md={4} sm={6} xs={12}>
-                    <Form.Select
-                      aria-label="State"
-                      value={selectedState}
-                      onChange={(e) => setSelectedState(e.target.value)}
-                    >
+                    <Form.Select value={selectedState} onChange={(e) => setSelectedState(e.target.value)}>
                       <option value="">Select State</option>
-                      {states.map((state) => (
-                        <option key={state.id} value={state.id}>
-                          {state.name}
-                        </option>
-                      ))}
+                      {states.map(state => <option key={state.id} value={state.id}>{state.name}</option>)}
                     </Form.Select>
                   </Col>
-
-                  {/* Job Type */}
                   <Col md={4} sm={6} xs={12}>
-                    <Form.Select
-                      aria-label="Job Type"
-                      value={selectedJobType}
-                      onChange={(e) => setSelectedJobType(e.target.value)}
-                    >
+                    <Form.Select value={selectedJobType} onChange={(e) => setSelectedJobType(e.target.value)}>
                       <option value="">Select Job Type</option>
-                      {jobTypes.map((type) => (
-                        <option key={type.id} value={type.id}>
-                          {type.name}
-                        </option>
-                      ))}
+                      {jobTypes.map(type => <option key={type.id} value={type.id}>{type.name}</option>)}
                     </Form.Select>
                   </Col>
-
-                  {/* Category */}
                   <Col md={4} sm={6} xs={12}>
-                    <Form.Select
-                      aria-label="Category"
-                      value={selectedCategory}
-                      onChange={(e) => setSelectedCategory(e.target.value)}
-                    >
+                    <Form.Select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)}>
                       <option value="">Select Category</option>
-                      {categories.map((cat) => (
-                        <option key={cat.id} value={cat.id}>
-                          {cat.name}
-                        </option>
-                      ))}
+                      {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
                     </Form.Select>
                   </Col>
                 </Row>
 
-                {/* Expanded Row (Visible on Expand) */}
                 {isExpanded && (
                   <Row className="align-items-center g-2 mb-3">
-                    {/* Skills */}
                     <Col md={4} sm={6} xs={12}>
-                      <Select
-                        isMulti
-                        options={skillsOptions}
-                        value={selectedSkills}
-                        onChange={setSelectedSkills}
-                        placeholder="Select Skills"
-                      />
+                      <Select isMulti options={skillsOptions} value={selectedSkills} onChange={setSelectedSkills} placeholder="Select Skills" />
                     </Col>
-
-                    {/* Experience */}
                     <Col md={4} sm={6} xs={12}>
-                      <Form.Select
-                        aria-label="Experience"
-                        value={selectedExperience}
-                        onChange={(e) => setSelectedExperience(e.target.value)}
-                      >
+                      <Form.Select value={selectedExperience} onChange={(e) => setSelectedExperience(e.target.value)}>
                         <option value="">Select Experience</option>
-                        {experiences.map((exp) => (
-                          <option key={exp.id} value={exp.id}>
-                            {exp.name}
-                          </option>
-                        ))}
+                        {experiences.map(exp => <option key={exp.id} value={exp.id}>{exp.name}</option>)}
                       </Form.Select>
                     </Col>
-
-                    {/* Level */}
                     <Col md={4} sm={6} xs={12}>
-                      <Form.Select
-                        aria-label="Level"
-                        value={selectedLevel}
-                        onChange={(e) => setSelectedLevel(e.target.value)}
-                      >
+                      <Form.Select value={selectedLevel} onChange={(e) => setSelectedLevel(e.target.value)}>
                         <option value="">Select Level</option>
-                        {levels.map((lvl) => (
-                          <option key={lvl.id} value={lvl.id}>
-                            {lvl.name}
-                          </option>
-                        ))}
+                        {levels.map(lvl => <option key={lvl.id} value={lvl.id}>{lvl.name}</option>)}
                       </Form.Select>
                     </Col>
                   </Row>
                 )}
 
-                {/* Action Buttons */}
                 <Row className="align-items-center g-2">
                   <Col md={4} sm={6} xs={12}>
-                    <Button
-                      variant="outline-primary"
-                      onClick={() => setIsExpanded(!isExpanded)}
-                      className="w-100"
-                    >
+                    <Button variant="outline-primary" onClick={() => setIsExpanded(!isExpanded)} className="w-100">
                       {isExpanded ? 'Condense Filters' : 'Expand Filters'}
                     </Button>
                   </Col>
                   <Col md={4} sm={6} xs={12}>
-                    <Button
-                      variant="outline-secondary"
-                      onClick={clearFilters}
-                      className="w-100"
-                    >
-                      Clear Filters
-                    </Button>
+                    <Button variant="outline-secondary" onClick={clearFilters} className="w-100">Clear Filters</Button>
                   </Col>
                 </Row>
               </Card.Body>
@@ -235,13 +188,24 @@ const AllJobs = ({ jobs }) => {
           <Card className="shadow-sm">
             <Card.Body>
               <h4 className="mb-3">Available Jobs</h4>
-              <AllJobList jobs={filteredJobs} onJobSelect={setSelectedJob} />
+              <AllJobList
+                jobs={filteredJobs}
+                onJobSelect={(job) => setSelectedJob(job)}
+                onApply={handleApply}
+                applicantId={applicantId}
+              />
             </Card.Body>
           </Card>
         </Col>
         <Col md={7}>
           {selectedJob ? (
-            <JobPreview job={selectedJob} />
+            <JobPreview
+              job={selectedJob}
+              applicantId={applicantId}
+              letter={letter}
+              setLetter={setLetter}
+              onSubmitApplication={handleSubmitApplication}
+            />
           ) : (
             <Card className="shadow-sm">
               <Card.Body className="text-center">
