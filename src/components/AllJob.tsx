@@ -11,7 +11,7 @@ import { useSession } from 'next-auth/react';
 
 const AllJobs = ({ jobs }) => {
   const router = useRouter();
-  const { slug, id } = router.query;
+  const { slug } = router.query; // Get category slug from URL
   const { categories, jobTypes, skills, experiences, levels, states } = useContext(UniversalDataContext);
 
   const [isExpanded, setIsExpanded] = useState(false);
@@ -29,7 +29,7 @@ const AllJobs = ({ jobs }) => {
 
   const { data: session, status } = useSession();
 
-  // Check if user is authenticated and has applicantId
+  // Set applicant ID if logged in
   useEffect(() => {
     if (status === 'authenticated' && session?.user?.applicantId) {
       setApplicantId(session.user.applicantId.toString());
@@ -51,13 +51,19 @@ const AllJobs = ({ jobs }) => {
     setSelectedSalary('');
   };
 
+  // Pre-select category from slug
   useEffect(() => {
-    if (slug && id) {
-      const matchedCategory = categories.find(category => category.id.toString() === id);
+    if (!slug || !categories.length) return;
+
+    if (slug === 'all') {
+      setSelectedCategory('');
+    } else {
+      const matchedCategory = categories.find(cat => cat.slug === slug);
       if (matchedCategory) setSelectedCategory(matchedCategory.id.toString());
     }
-  }, [slug, id, categories]);
+  }, [slug, categories]);
 
+  // Filter jobs based on selected filters
   useEffect(() => {
     const filtered = jobs.filter((job) => {
       const jobSkills = Array.isArray(job.skill_ids)
@@ -97,7 +103,7 @@ const AllJobs = ({ jobs }) => {
     jobs,
   ]);
 
-  // Apply logic for logged-in applicants
+  // Handle job application
   const handleApply = (job) => {
     if (!applicantId) {
       alert('Only logged-in applicants can apply for this job.');
@@ -113,7 +119,6 @@ const AllJobs = ({ jobs }) => {
     }
     alert('Application submitted successfully!');
     setLetter('');
-    // Close application box
     setSelectedJob({ ...selectedJob, showApplicationBox: false });
   };
 
@@ -149,7 +154,13 @@ const AllJobs = ({ jobs }) => {
                 {isExpanded && (
                   <Row className="align-items-center g-2 mb-3">
                     <Col md={4} sm={6} xs={12}>
-                      <Select isMulti options={skillsOptions} value={selectedSkills} onChange={setSelectedSkills} placeholder="Select Skills" />
+                      <Select
+                        isMulti
+                        options={skillsOptions}
+                        value={selectedSkills}
+                        onChange={setSelectedSkills}
+                        placeholder="Select Skills"
+                      />
                     </Col>
                     <Col md={4} sm={6} xs={12}>
                       <Form.Select value={selectedExperience} onChange={(e) => setSelectedExperience(e.target.value)}>

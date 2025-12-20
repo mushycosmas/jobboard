@@ -80,9 +80,11 @@ const UniversalDataProvider = ({ children }) => {
     ]);
 
     setCategories([
-      { id: 1, name: 'Engineering' },
-      { id: 2, name: 'Finance' },
-      { id: 3, name: 'Marketing' }
+      { id: 1, name: 'Engineering', slug: 'engineering' },
+      { id: 2, name: 'Finance', slug: 'bank-and-financing' },
+      { id: 3, name: 'Marketing', slug: 'marketing' },
+      { id: 4, name: 'Test', slug: 'test' },
+      
     ]);
 
     // Add sample job programs/courses
