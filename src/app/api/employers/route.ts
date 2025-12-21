@@ -7,7 +7,8 @@ export async function GET() {
       SELECT
         id,
         company_name,
-        logo
+        logo,
+        slug
       FROM employers
       WHERE is_featured = 1
       ORDER BY created_at DESC;

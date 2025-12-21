@@ -78,7 +78,7 @@ const FeaturedRecruiters = () => {
                   key={recruiter.id}
                   imgSrc={recruiter.logo}
                   altText={recruiter.company_name}
-                  link={`/employer/profile/${recruiter.id}`}
+                  link={`/employer/profile/${recruiter.slug}`}
                   title={recruiter.company_name}
                 />
               ))}
