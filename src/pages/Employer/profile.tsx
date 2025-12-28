@@ -56,7 +56,7 @@ const EmployerProfilePage: React.FC = () => {
         setLoading(true);
         const employerId = session.user.employerId;
 
-        const res = await fetch(`/api/employer/profile/${employerId}`);
+        const res = await fetch(`/api/employer/profile/edit/${employerId}`);
         if (!res.ok) throw new Error("Failed to fetch profile");
 
         const data = await res.json();
@@ -98,7 +98,7 @@ const EmployerProfilePage: React.FC = () => {
       }
       if (logoFile) formData.append("logo", logoFile);
 
-      const res = await fetch(`/api/employer/profile/${profile.id}`, {
+      const res = await fetch(`/api/employer/profile/edit/${profile.id}`, {
         method: "PUT",
         body: formData,
       });
