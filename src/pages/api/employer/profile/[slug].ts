@@ -41,7 +41,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (employer.logo) {
       const logoPath = employer.logo.replace(/\\/g, '/'); // convert backslashes
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000';
-      employer.logo = `${baseUrl}/${logoPath}`;
+      employer.logo = `${baseUrl}/uploads/${logoPath}`;
     }
 
     return res.status(200).json(employer);

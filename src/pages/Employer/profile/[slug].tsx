@@ -47,11 +47,14 @@ const EmployerProfilePage = () => {
         const employerData: Employer = await employerRes.json();
 
         setEmployer({
-          ...employerData,
-          logo: employerData.logo
-            ? `${process.env.NEXT_PUBLIC_API_BASE_URL || ''}/uploads/${employerData.logo.replace(/\\/g, '/')}`
-            : '/default-logo.png',
-        });
+  ...employerData,
+  logo: employerData.logo
+    ? employerData.logo.startsWith('http')
+      ? employerData.logo
+      : `${process.env.NEXT_PUBLIC_API_BASE_URL}/${employerData.logo.replace(/^\/+/, '')}`
+    : '/default-logo.png',
+});
+
 
         const jobsRes = await fetch(`/api/jobs?employerId=${employerData.id}`);
         const jobsData: Job[] = jobsRes.ok ? await jobsRes.json() : [];
@@ -81,72 +84,66 @@ const EmployerProfilePage = () => {
         <Row className="gy-4">
           {/* Left Column */}
           <Col md={4}>
-            <Card className="shadow-sm text-center p-3 border-0">
-              {employer?.logo && (
-                <img
-                  src={employer.logo}
-                  alt={employer.company_name}
-                  className="img-fluid rounded-circle mb-3"
-                  style={{ maxHeight: '150px', border: '3px solid #276795', padding: '5px' }}
-                />
-              )}
-              <h4 className="fw-bold">{employer?.company_name}</h4>
-              <p className="text-muted mb-1">{employer?.industry_name}</p>
-              <p className="text-muted">{employer?.region_name}</p>
+  <Card className="shadow-sm text-center p-4 border-0">
+    {employer?.logo && (
+      <div
+        style={{
+          width: '150px',
+          height: '150px',
+          margin: '0 auto',
+          border: '3px solid #276795',
+          borderRadius: '12px', // slightly rounded instead of circle
+          overflow: 'hidden',
+          padding: '5px',
+          backgroundColor: '#fff',
+        }}
+      >
+        <img
+          src={employer.logo}
+          alt={employer.company_name}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'contain', // maintain aspect ratio
+          }}
+        />
+      </div>
+    )}
 
-              <div className="d-flex justify-content-center gap-2 mt-3">
-                <Button variant="primary" className="px-4">Follow</Button>
-                <Button variant="outline-primary" className="px-4">Contact</Button>
-              </div>
+    <h4 className="fw-bold mt-3">{employer?.company_name}</h4>
+    <p className="text-muted mb-1">{employer?.industry_name}</p>
+    <p className="text-muted">{employer?.address || 'Location not set'}</p>
 
-              <div className="mt-3 d-flex justify-content-center gap-3 flex-wrap">
-                {employer?.website && (
-                  <a
-                    href={normalizeUrl(employer.website)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-dark fs-5"
-                    title="Website"
-                  >
-                    <FaGlobe />
-                  </a>
-                )}
-                {employer?.linkedin && (
-                  <a
-                    href={normalizeUrl(employer.linkedin)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary fs-5"
-                    title="LinkedIn"
-                  >
-                    <FaLinkedin />
-                  </a>
-                )}
-                {employer?.twitter && (
-                  <a
-                    href={normalizeUrl(employer.twitter)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-info fs-5"
-                    title="Twitter"
-                  >
-                    <FaTwitter />
-                  </a>
-                )}
-                {employer?.facebook && (
-                  <a
-                    href={normalizeUrl(employer.facebook)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary fs-5"
-                    title="Facebook"
-                  >
-                    <FaFacebook />
-                  </a>
-                )}
-              </div>
-            </Card>
-          </Col>
+    <div className="d-flex justify-content-center gap-2 mt-3">
+      <Button variant="primary" className="px-4">Follow</Button>
+      <Button variant="outline-primary" className="px-4">Contact</Button>
+    </div>
+
+    <div className="mt-3 d-flex justify-content-center gap-3 flex-wrap">
+      {employer?.website && (
+        <a href={normalizeUrl(employer.website)} target="_blank" rel="noopener noreferrer" className="text-dark fs-5" title="Website">
+          <FaGlobe />
+        </a>
+      )}
+      {employer?.linkedin && (
+        <a href={normalizeUrl(employer.linkedin)} target="_blank" rel="noopener noreferrer" className="text-primary fs-5" title="LinkedIn">
+          <FaLinkedin />
+        </a>
+      )}
+      {employer?.twitter && (
+        <a href={normalizeUrl(employer.twitter)} target="_blank" rel="noopener noreferrer" className="text-info fs-5" title="Twitter">
+          <FaTwitter />
+        </a>
+      )}
+      {employer?.facebook && (
+        <a href={normalizeUrl(employer.facebook)} target="_blank" rel="noopener noreferrer" className="text-primary fs-5" title="Facebook">
+          <FaFacebook />
+        </a>
+      )}
+    </div>
+  </Card>
+</Col>
+
 
           {/* Right Column */}
           <Col md={8}>
