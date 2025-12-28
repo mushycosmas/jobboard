@@ -40,7 +40,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       // 📌 Create a new application
       case "POST": {
-        const { job_id, letter, status, stage_id, hide } = req.body;
+        const { job_id, letter, status, hide } = req.body;
+        const stage_id=1;
 
         if (!job_id || !letter) {
           return res.status(400).json({ error: "job_id and letter are required" });

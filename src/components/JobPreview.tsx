@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Card, Row, Col, Button, Alert } from 'react-bootstrap';
+import React, { useState, useEffect } from 'react';
+import { Card, Row, Col, Button, Alert, Form } from 'react-bootstrap';
 import { FaBriefcase, FaCalendarCheck, FaList, FaCog, FaSave, FaPrint, FaEye, FaShareAlt } from 'react-icons/fa';
 import { useSession } from 'next-auth/react';
+import { incrementJobView } from '@/utils/jobView'; // adjust path if necessary
 
 interface Job {
   id: number;
+  slug: string;
   title: string;
   company_name: string;
   logo?: string;
@@ -16,12 +18,13 @@ interface Job {
   salary_to?: number;
   posting_date: string;
   experience_id?: number;
-  category_names?: string[];
-  culture_names?: string[];
-  skill_names?: string[];
+  category_names?: string[] | null;
+  culture_names?: string[] | null;
+  skill_names?: string[] | null;
   summary?: string;
   description?: string;
   url?: string;
+  views?: number;
 }
 
 interface JobPreviewProps {
@@ -35,11 +38,21 @@ const JobPreview: React.FC<JobPreviewProps> = ({ job, applicantId }) => {
   const [error, setError] = useState('');
   const [showTextBox, setShowTextBox] = useState(false);
   const [letter, setLetter] = useState('');
+  const [views, setViews] = useState<number>(job.views || 0);
 
   const getLogoSrc = (logo?: string) =>
     logo ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/${logo}` : '/default-logo.png';
 
-  // APPLY LOGIC
+  // Increment job view using slug
+  useEffect(() => {
+    if (job?.slug) {
+      incrementJobView(job.slug)
+        .then((count) => setViews(count ?? views))
+        .catch((err) => console.error('Failed to increment job view:', err));
+    }
+  }, [job?.slug]);
+
+  // APPLY LOGIC (use id)
   const handleApply = () => {
     if (!applicantId) {
       alert('Only logged-in applicants can apply for this job.');
@@ -63,7 +76,7 @@ const JobPreview: React.FC<JobPreviewProps> = ({ job, applicantId }) => {
     setShowTextBox(false);
   };
 
-  // SAVE JOB
+  // SAVE JOB (use id)
   const handleSaveJob = async () => {
     if (!session) {
       alert('Please log in to save this job.');
@@ -157,8 +170,8 @@ const JobPreview: React.FC<JobPreviewProps> = ({ job, applicantId }) => {
                 <div className="mb-1"><FaCalendarCheck className="me-2" />Posted: {new Date(job.posting_date).toLocaleDateString()}</div>
               </Col>
               <Col xs="auto">
-                <div className="mb-1"><FaList className="me-2" />{job.category_names?.join(', ') || 'No categories'}</div>
-                <div className="mb-1"><FaCog className="me-2" />{job.culture_names?.join(', ') || 'No culture'}</div>
+                <div className="mb-1"><FaList className="me-2" />{(job.category_names ?? []).join(', ') || 'No categories'}</div>
+                <div className="mb-1"><FaCog className="me-2" />{(job.culture_names ?? []).join(', ') || 'No culture'}</div>
               </Col>
             </Row>
 
@@ -169,8 +182,8 @@ const JobPreview: React.FC<JobPreviewProps> = ({ job, applicantId }) => {
             {showTextBox && (
               <div className="mt-3 p-3 border rounded bg-light">
                 <h5>Cover Letter</h5>
-                <textarea
-                  className="form-control"
+                <Form.Control
+                  as="textarea"
                   rows={5}
                   value={letter}
                   onChange={(e) => setLetter(e.target.value)}
@@ -193,7 +206,7 @@ const JobPreview: React.FC<JobPreviewProps> = ({ job, applicantId }) => {
         <div dangerouslySetInnerHTML={{ __html: job.description || 'Not available' }} />
 
         <h3 className="pt-3 pb-2">Keyskills</h3>
-        <div>{job.skill_names?.join(', ') || 'Not Mentioned'}</div>
+        <div>{(job.skill_names ?? []).join(', ') || 'Not Mentioned'}</div>
 
         {error && <Alert variant="danger">{error}</Alert>}
       </Card.Body>
@@ -202,7 +215,7 @@ const JobPreview: React.FC<JobPreviewProps> = ({ job, applicantId }) => {
         <Button variant="link" onClick={handleSaveJob}><FaSave /> {isJobSaved ? 'Saved' : 'Save'}</Button>
         <Button variant="link" onClick={handleShare}><FaShareAlt /></Button>
         <Button variant="link" onClick={handlePrint}><FaPrint /></Button>
-        <span className="mx-4 text-muted"><FaEye /> View More Jobs</span>
+        <span className="mx-4 text-muted"><FaEye /> {views} Views</span>
       </Card.Footer>
     </Card>
   );
